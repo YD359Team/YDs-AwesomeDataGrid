@@ -1,0 +1,9 @@
+﻿
+internal class ScrollBarData
+{
+    public int OffsetX;
+    public int OffsetY;
+
+    public Rectangle VertThumb { get; internal set; }
+    public Rectangle HorThumb { get; internal set; }
+}
