@@ -10,7 +10,7 @@ Simple and faster DataGridView without dependencies
 
 ## GetStarted
 
-1. Define your data provider with IDataProvider interface
-2. Add AwesomeDataGrid to your form
-3. Set data provider as grid DataSource property
-4. Enjoy
+1. Define your data provider with IDataProvider interface.
+2. Add AwesomeDataGrid to your form.
+3. Set data provider as grid DataSource property.
+4. Enjoy.
