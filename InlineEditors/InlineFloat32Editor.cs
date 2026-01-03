@@ -2,22 +2,25 @@
 
 namespace YDs_AwesomeDataGrid
 {
-    internal class InlineEnumEditor : IInlineEditor
+    internal class InlineFloat32Editor : IInlineEditor
     {
         public event Action OnLostFocus;
         public event Action<IInlineEditor> OnEndEdit;
 
         public Control Grid { get; }
-        public Type ColumnType => typeof(string);
+        public Type ColumnType => typeof(int);
         public Control Editor { get; private set; }
         public object Value { get; private set; }
 
-        public InlineEnumEditor(Control grid)
+        public InlineFloat32Editor(Control grid)
         {
             this.Grid = grid;
-            this.Editor = new ComboBox()
+            this.Editor = new NumericUpDown()
             {
-                DropDownStyle = ComboBoxStyle.DropDownList,
+                BorderStyle = BorderStyle.FixedSingle,
+                DecimalPlaces = 2,
+                Minimum = Convert.ToDecimal(decimal.MinValue),
+                Maximum = Convert.ToDecimal(decimal.MaxValue),
             };
             this.Editor.Leave += Editor_LostFocus;
             this.Editor.KeyDown += Editor_KeyDown;
@@ -29,7 +32,7 @@ namespace YDs_AwesomeDataGrid
             {
                 return;
             }
-            this.Value = ((ComboBox)this.Editor).SelectedItem!;
+            this.Value = this.Editor.Text;
             HideEditor();
             OnEndEdit?.Invoke(this);
         }
@@ -43,7 +46,7 @@ namespace YDs_AwesomeDataGrid
         private void HideEditor()
         {
             this.Grid.Controls.Remove(this.Editor);
-            ((ComboBox)this.Editor).Items.Clear();
+            ((NumericUpDown)this.Editor).Value = 0;
         }
 
         public void BeginEdit(Rectangle rect, object? cellValue, object[]? enumValues = null)
@@ -53,10 +56,9 @@ namespace YDs_AwesomeDataGrid
             this.Editor.Location = rect.Location;
             this.Editor.Size = rect.Size;
             this.Editor.Font = this.Grid.Font;
-            ((ComboBox)this.Editor).Items.AddRange(enumValues!);
             if (cellValue is not null)
             {
-                ((ComboBox)this.Editor).SelectedItem = cellValue;
+                ((NumericUpDown)this.Editor).Value = Convert.ToDecimal((float)cellValue);
             }
             this.Grid.Controls.Add(this.Editor);
             this.Editor.Focus();

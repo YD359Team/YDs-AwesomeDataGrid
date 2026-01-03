@@ -21,7 +21,7 @@ namespace YDs_AwesomeDataGrid
             {
                 Value = FallbackValue
             };
-            this.Editor.LostFocus += Editor_LostFocus;
+            this.Editor.Leave += Editor_LostFocus;
             this.Editor.KeyDown += Editor_KeyDown;
         }
 
@@ -51,9 +51,10 @@ namespace YDs_AwesomeDataGrid
         public void BeginEdit(Rectangle rect, object? cellValue, object[]? enumValues = null)
         {
             Rectangle r = rect;
-            r.Inflate(1, 1);
+            r.Inflate(2, 2);
             this.Editor.Location = rect.Location;
             this.Editor.Size = rect.Size;
+            this.Editor.Font = this.Grid.Font;
             if (cellValue is not null)
             {
                 ((DateTimePicker)this.Editor).Value = (DateTime)cellValue;

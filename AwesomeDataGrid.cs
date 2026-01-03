@@ -184,10 +184,12 @@ namespace YDs_AwesomeDataGrid
             var dateTimeEditor = new InlineDateTimeEditor(this);
             var enumEditor = new InlineEnumEditor(this);
             var int32Editor = new InlineInt32Editor(this);
+            var float32Editor = new InlineFloat32Editor(this);
             _editors[typeof(string)] = textEditor;
             _editors[typeof(DateTime)] = dateTimeEditor;
             _editors[typeof(Enum)] = enumEditor;
             _editors[typeof(int)] = int32Editor;
+            _editors[typeof(float)] = float32Editor;
             textEditor.OnLostFocus += InlineEditor_OnLostFocus;
             textEditor.OnEndEdit += InlineEditor_OnEndEdit;
             dateTimeEditor.OnLostFocus += InlineEditor_OnLostFocus;
@@ -196,6 +198,8 @@ namespace YDs_AwesomeDataGrid
             enumEditor.OnEndEdit += InlineEditor_OnEndEdit;
             int32Editor.OnLostFocus += InlineEditor_OnLostFocus;
             int32Editor.OnEndEdit += InlineEditor_OnEndEdit;
+            float32Editor.OnLostFocus += InlineEditor_OnLostFocus;
+            float32Editor.OnEndEdit += InlineEditor_OnEndEdit;
         }
 
         protected override void OnPaint(PaintEventArgs e)
