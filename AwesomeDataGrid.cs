@@ -519,6 +519,20 @@ namespace YDs_AwesomeDataGrid
 
                 MoveTo(newRow, newCol);
             }
+            // pgup pgdn
+            else if (e.KeyCode is Keys.PageDown or Keys.PageUp)
+            {
+                int newRow = _selector.Row;
+                int newCol = _selector.Column;
+
+                switch (e.KeyCode)
+                {
+                    case Keys.PageDown: newRow += 10; break;
+                    case Keys.PageUp: newRow -= 10; break;
+                }
+
+                MoveTo(newRow, newCol);
+            }
         }
 
         protected override void OnMouseLeave(EventArgs e)
