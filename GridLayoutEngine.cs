@@ -20,6 +20,24 @@
         public int ColumnWidth => DEFAULT_COLUMN_WIDTH;
         public int HeaderHeight => DEFAULT_ROW_HEIGHT;
         public int RowHeaderWidth => DEFAULT_ROW_HEADER_WIDTH;
+        private ColumnWidthManager _columnWidths;
+
+        public int VisibleColumnCount(int firstVisibleCol)
+        {
+            int width = 0;
+            int count = 0;
+
+            for (int i = firstVisibleCol; i < _columnWidths.ColumnCount; i++)
+            {
+                width += _columnWidths[i];
+                if (width > GridRect.Width)
+                    break;
+
+                count++;
+            }
+
+            return Math.Max(1, count);
+        }
 
         public void Recalc(
             Size controlSize,
@@ -29,7 +47,6 @@
         {
             int rowHeaderWidth = isRowHeaderVisible ? RowHeaderWidth : 0;
 
-            // 1️⃣ рабочая область
             Rectangle workArea = new Rectangle(
                 0,
                 0,
@@ -37,11 +54,9 @@
                 controlSize.Height
             );
 
-            // 2️⃣ header
             workArea.Y += HeaderHeight;
             workArea.Height -= HeaderHeight;
 
-            // 3️⃣ начальный GridRect (без скроллов)
             Rectangle gridRect = new Rectangle(
                 rowHeaderWidth,
                 workArea.Y,
@@ -49,13 +64,11 @@
                 Math.Max(0, workArea.Height)
             );
 
-            // 4️⃣ первый расчёт строк
             VisibleRowCount = Math.Max(1, gridRect.Height / RowHeight);
 
             NeedVertScroll = rowCount > VisibleRowCount;
             NeedHorScroll = columnCount * ColumnWidth > gridRect.Width;
 
-            // 5️⃣ взаимозависимость скроллов
             if (NeedVertScroll)
                 gridRect.Width -= SystemInformation.VerticalScrollBarWidth;
 
@@ -65,14 +78,11 @@
             gridRect.Width = Math.Max(0, gridRect.Width);
             gridRect.Height = Math.Max(0, gridRect.Height);
 
-            // 6️⃣ финальный пересчёт строк
             VisibleRowCount = Math.Max(1, gridRect.Height / RowHeight);
             NeedVertScroll = rowCount > VisibleRowCount;
 
-            // 7️⃣ фиксируем GridRect
             GridRect = gridRect;
 
-            // 8️⃣ RowHeader
             RowHeaderRect = isRowHeaderVisible
                 ? new Rectangle(
                     0,
@@ -81,13 +91,13 @@
                     GridRect.Height)
                 : Rectangle.Empty;
 
-            // 9️⃣ ScrollBars
             VertScrollRect = NeedVertScroll
                 ? new Rectangle(
                     GridRect.Right,
-                    GridRect.Y,
+                    HeaderHeight,
                     SystemInformation.VerticalScrollBarWidth,
-                    GridRect.Height)
+                    controlSize.Height - HeaderHeight
+                )
                 : Rectangle.Empty;
 
             HorScrollRect = NeedHorScroll
@@ -97,25 +107,28 @@
                     GridRect.Width,
                     SystemInformation.HorizontalScrollBarHeight)
                 : Rectangle.Empty;
+
+            _columnWidths = new ColumnWidthManager(columnCount, DEFAULT_COLUMN_WIDTH);
         }
 
         public Rectangle GetCellRect(
-            int row,
-            int col,
-            int firstVisibleRow,
-            int firstVisibleCol)
+                int row,
+                int col,
+                int firstVisibleRow,
+                int firstVisibleCol)
         {
             if (row < firstVisibleRow || row >= firstVisibleRow + VisibleRowCount)
                 return Rectangle.Empty;
 
-            int visibleCols = GridRect.Width / ColumnWidth;
-            if (col < firstVisibleCol || col >= firstVisibleCol + visibleCols)
-                return Rectangle.Empty;
+            int x = GridRect.X;
+            for (int i = firstVisibleCol; i < col; i++)
+                x += _columnWidths[i];
 
-            int x = GridRect.X + (col - firstVisibleCol) * ColumnWidth;
             int y = GridRect.Y + (row - firstVisibleRow) * RowHeight;
 
-            return new Rectangle(x, y, ColumnWidth, RowHeight);
+            int w = _columnWidths[col];
+
+            return new Rectangle(x, y, w, RowHeight);
         }
 
         public bool TryGetCellByPoint(

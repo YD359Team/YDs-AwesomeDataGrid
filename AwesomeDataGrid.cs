@@ -150,6 +150,14 @@ namespace YDs_AwesomeDataGrid
         private int _cachedLastRow = -1;
         #endregion
 
+        #region DragThumb
+        private bool _isDraggingVertThumb;
+        private bool _isDraggingHorThumb;
+        private Point _dragStartMousePos;
+        private int _dragStartFirstVisibleRow;
+        private int _dragStartFirstVisibleCol;
+        #endregion
+
         #region Graphics
         private readonly Brush _defaultTextBrush = Brushes.Black;
         private readonly Brush _highlightTextBrush = SystemBrushes.HighlightText;
@@ -442,6 +450,44 @@ namespace YDs_AwesomeDataGrid
 
             Rectangle mouseRect = new(e.Location, new(1, 1));
 
+            if (_isDraggingVertThumb)
+            {
+                int dy = e.Y - _dragStartMousePos.Y;
+
+                int scrollRange = _layout.VertScrollRect.Height - _scrollBarData.VertThumb.Height;
+                if (scrollRange <= 0) return;
+
+                float ratio = dy / (float)scrollRange;
+                int maxFirstRow = Math.Max(0, RowCount - VisibleRowCount);
+
+                _viewPort.FirstVisibleRow = _dragStartFirstVisibleRow + (int)(ratio * maxFirstRow);
+                _viewPort.FirstVisibleRow = Math.Clamp(_viewPort.FirstVisibleRow, 0, maxFirstRow);
+
+                UpdateScrollThumbs();
+                UpdateVisibleCells();
+                Invalidate();
+                return;
+            }
+
+            if (_isDraggingHorThumb)
+            {
+                int dx = e.X - _dragStartMousePos.X;
+
+                int scrollRange = _layout.HorScrollRect.Width - _scrollBarData.HorThumb.Width;
+                if (scrollRange <= 0) return;
+
+                float ratio = dx / (float)scrollRange;
+                int maxFirstCol = Math.Max(0, ColumnCount - _layout.VisibleColumnCount(_viewPort.FirstVisibleColumn));
+
+                _viewPort.FirstVisibleColumn = _dragStartFirstVisibleCol + (int)(ratio * maxFirstCol);
+                _viewPort.FirstVisibleColumn = Math.Clamp(_viewPort.FirstVisibleColumn, 0, maxFirstCol);
+
+                UpdateScrollThumbs();
+                UpdateVisibleCells();
+                Invalidate();
+                return;
+            }
+
             if (_layout.VertScrollRect.IntersectsWith(mouseRect))
             {
                 if (_hoverState == HoverStates.VerticalScroll) return;
@@ -495,6 +541,27 @@ namespace YDs_AwesomeDataGrid
             Rectangle mouseRect = new(e.Location, new(1, 1));
             bool isInGrid = _layout.GridRect.IntersectsWith(mouseRect);
 
+            Rectangle vertThumb = _scrollBarData.VertThumb;
+            Rectangle horThumb = _scrollBarData.HorThumb;
+
+            if (vertThumb.Contains(e.Location))
+            {
+                _isDraggingVertThumb = true;
+                _dragStartMousePos = e.Location;
+                _dragStartFirstVisibleRow = _viewPort.FirstVisibleRow;
+                Capture = true; // чтобы получать события мыши вне контрола
+                return;
+            }
+
+            if (horThumb.Contains(e.Location))
+            {
+                _isDraggingHorThumb = true;
+                _dragStartMousePos = e.Location;
+                _dragStartFirstVisibleCol = _viewPort.FirstVisibleColumn;
+                Capture = true;
+                return;
+            }
+
             // find column header by point
             if (TryGetColumnHeaderByPoint(e.Location, out int headerCol))
             {
@@ -542,6 +609,14 @@ namespace YDs_AwesomeDataGrid
             }
 
             if (!this.Focused) Focus();
+        }
+
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+            _isDraggingVertThumb = false;
+            _isDraggingHorThumb = false;
+            Capture = false;
         }
 
         protected override void OnMouseDoubleClick(MouseEventArgs e)
@@ -1034,6 +1109,43 @@ namespace YDs_AwesomeDataGrid
                 );
             }
         }
+
+        private void MoveVerticalThumb(int mouseY)
+        {
+            Rectangle track = _layout.VertScrollRect;
+            Rectangle thumb = _scrollBarData.VertThumb;
+
+            int y = mouseY - _scrollBarData.DragOffset;
+            y = Math.Clamp(y, track.Top, track.Bottom - thumb.Height);
+
+            int scrollRange = track.Height - thumb.Height;
+            if (scrollRange <= 0)
+                return;
+
+            float t = (float)(y - track.Top) / scrollRange;
+
+            int maxFirstRow = Math.Max(0, RowCount - _layout.VisibleRowCount);
+            _viewPort.FirstVisibleRow = (int)(t * maxFirstRow);
+        }
+
+        private void MoveHorizontalThumb(int mouseX)
+        {
+            Rectangle track = _layout.HorScrollRect;
+            Rectangle thumb = _scrollBarData.HorThumb;
+
+            int x = mouseX - _scrollBarData.DragOffset;
+            x = Math.Clamp(x, track.Left, track.Right - thumb.Width);
+
+            int scrollRange = track.Width - thumb.Width;
+            if (scrollRange <= 0)
+                return;
+
+            float t = (float)(x - track.Left) / scrollRange;
+
+            int maxFirstCol = Math.Max(0, ColumnCount - _layout.VisibleColumnCount(_viewPort.FirstVisibleColumn));
+            _viewPort.FirstVisibleColumn = (int)(t * maxFirstCol);
+        }
+
         #endregion
 
         #region EventHandlers
@@ -1088,4 +1200,5 @@ namespace YDs_AwesomeDataGrid
         }
         #endregion
     }
+
 }
