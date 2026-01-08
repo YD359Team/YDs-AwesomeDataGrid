@@ -27,9 +27,9 @@
             int columnCount,
             bool isRowHeaderVisible)
         {
-            int rowHeaderWidth = isRowHeaderVisible ? DEFAULT_ROW_HEADER_WIDTH : 0;
+            int rowHeaderWidth = isRowHeaderVisible ? RowHeaderWidth : 0;
 
-            // 1️⃣ рабочая область (без скроллов)
+            // 1️⃣ рабочая область
             Rectangle workArea = new Rectangle(
                 0,
                 0,
@@ -37,35 +37,42 @@
                 controlSize.Height
             );
 
-            // 2️⃣ учитываем header
+            // 2️⃣ header
             workArea.Y += HeaderHeight;
             workArea.Height -= HeaderHeight;
 
-            // 3️⃣ предварительный GridRect
-            GridRect = new Rectangle(
+            // 3️⃣ начальный GridRect (без скроллов)
+            Rectangle gridRect = new Rectangle(
                 rowHeaderWidth,
                 workArea.Y,
-                workArea.Width - rowHeaderWidth,
-                workArea.Height
+                Math.Max(0, workArea.Width - rowHeaderWidth),
+                Math.Max(0, workArea.Height)
             );
 
-            VisibleRowCount = Math.Max(1, GridRect.Height / RowHeight);
+            // 4️⃣ первый расчёт строк
+            VisibleRowCount = Math.Max(1, gridRect.Height / RowHeight);
 
             NeedVertScroll = rowCount > VisibleRowCount;
-            NeedHorScroll = columnCount * ColumnWidth > GridRect.Width;
+            NeedHorScroll = columnCount * ColumnWidth > gridRect.Width;
 
-            // 4️⃣ урезаем под скроллы
-            int vertWidth = NeedVertScroll ? SystemInformation.VerticalScrollBarWidth : 0;
-            int horHeight = NeedHorScroll ? SystemInformation.HorizontalScrollBarHeight : 0;
+            // 5️⃣ взаимозависимость скроллов
+            if (NeedVertScroll)
+                gridRect.Width -= SystemInformation.VerticalScrollBarWidth;
 
-            GridRect = new Rectangle(
-                rowHeaderWidth,
-                workArea.Y,
-                workArea.Width - rowHeaderWidth - vertWidth,
-                workArea.Height - horHeight
-            );
+            if (NeedHorScroll)
+                gridRect.Height -= SystemInformation.HorizontalScrollBarHeight;
 
-            // 5️⃣ RowHeader — СТРОГО ПО GridRect.Y
+            gridRect.Width = Math.Max(0, gridRect.Width);
+            gridRect.Height = Math.Max(0, gridRect.Height);
+
+            // 6️⃣ финальный пересчёт строк
+            VisibleRowCount = Math.Max(1, gridRect.Height / RowHeight);
+            NeedVertScroll = rowCount > VisibleRowCount;
+
+            // 7️⃣ фиксируем GridRect
+            GridRect = gridRect;
+
+            // 8️⃣ RowHeader
             RowHeaderRect = isRowHeaderVisible
                 ? new Rectangle(
                     0,
@@ -74,11 +81,7 @@
                     GridRect.Height)
                 : Rectangle.Empty;
 
-            // 6️⃣ финальный пересчёт строк
-            VisibleRowCount = Math.Max(1, GridRect.Height / RowHeight);
-            NeedVertScroll = rowCount > VisibleRowCount;
-
-            // 7️⃣ ScrollBars
+            // 9️⃣ ScrollBars
             VertScrollRect = NeedVertScroll
                 ? new Rectangle(
                     GridRect.Right,
@@ -105,7 +108,8 @@
             if (row < firstVisibleRow || row >= firstVisibleRow + VisibleRowCount)
                 return Rectangle.Empty;
 
-            if (col < firstVisibleCol)
+            int visibleCols = GridRect.Width / ColumnWidth;
+            if (col < firstVisibleCol || col >= firstVisibleCol + visibleCols)
                 return Rectangle.Empty;
 
             int x = GridRect.X + (col - firstVisibleCol) * ColumnWidth;
@@ -130,6 +134,9 @@
             int localX = p.X - GridRect.X;
             int localY = p.Y - GridRect.Y;
 
+            if (localX < 0 || localY < 0)
+                return false;
+
             row = firstVisibleRow + localY / RowHeight;
             col = firstVisibleCol + localX / ColumnWidth;
 
@@ -143,10 +150,10 @@
         {
             col = -1;
 
-            if (p.Y > HeaderHeight)
+            if (p.Y < 0 || p.Y >= HeaderHeight)
                 return false;
 
-            if (p.X < GridRect.X)
+            if (p.X < GridRect.X || p.X >= GridRect.Right)
                 return false;
 
             col = firstVisibleCol + (p.X - GridRect.X) / ColumnWidth;

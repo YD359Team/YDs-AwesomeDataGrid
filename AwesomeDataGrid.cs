@@ -82,10 +82,12 @@ namespace YDs_AwesomeDataGrid
             get => field ?? EmptyProvider;
             set
             {
+                // clear enum cache
+                _enumValues.Clear();
                 if (value is not EmptyDataProvider) 
                 {
                     field?.OnDataChanged -= AwesomeDataGrid_OnDataChanged;
-                    field = value;
+                    field = value ?? EmptyProvider;
                     LoadData();
                     RecalcRects();
                     UpdateVisibleCells();
@@ -153,6 +155,7 @@ namespace YDs_AwesomeDataGrid
         private readonly Brush _highlightTextBrush = SystemBrushes.HighlightText;
         private readonly Brush _highlightBackgroundBrush = new SolidBrush(Color.FromArgb(128, SystemColors.Highlight));
         private readonly Brush _maskBrush = new SolidBrush(Color.FromArgb(100, Color.DarkGray));
+        private readonly SolidBrush _thumbBrush = new(SystemColors.ControlDarkDark);
         private readonly Pen _selectedBorderPen = new(SystemColors.HighlightText, 1f);
         private readonly Pen _hoveredBorderPen = new(Color.DeepSkyBlue, 1f);
         #endregion
@@ -319,6 +322,7 @@ namespace YDs_AwesomeDataGrid
                 if (!_selector.IsVisible) return;
 
                 int col = _selector.Column;
+                if (col < 0 || col >= ColumnCount) return;
                 if (_columns[col].IsReadOnly) return;
 
                 int row = _selector.Row;
@@ -330,6 +334,7 @@ namespace YDs_AwesomeDataGrid
                 if (!_selector.IsVisible) return;
 
                 int col = _selector.Column;
+                if (col < 0 || col >= ColumnCount) return;
                 if (_columns[col].IsReadOnly) return;
 
                 int row = _selector.Row;
@@ -499,8 +504,9 @@ namespace YDs_AwesomeDataGrid
 
                 if (_columns.Any(c => c != column && c.SortingDirection != ADGSortingDirection.None))
                 {
-                    _columns.SingleOrDefault(c => c.SortingDirection != ADGSortingDirection.None)!
-                        .SortingDirection = ADGSortingDirection.None;
+                    foreach (var c in _columns)
+                        if (c != column)
+                            c.SortingDirection = ADGSortingDirection.None;
                 }
 
                 ADGSortingDirection sortDir = column.SortingDirection switch
@@ -877,7 +883,7 @@ namespace YDs_AwesomeDataGrid
                 g.FillRectangle(Brushes.Gainsboro, _layout.VertScrollRect);
 
                 // Используем ScrollBarData
-                g.FillRectangle(CustomSimpleScrollBarRenderer.BrushThumb, _scrollBarData.VertThumb);
+                g.FillRectangle(_thumbBrush, _scrollBarData.VertThumb);
 
                 g.ResetClip();
             }
@@ -888,7 +894,7 @@ namespace YDs_AwesomeDataGrid
                 g.FillRectangle(Brushes.Gainsboro, _layout.HorScrollRect);
 
                 // Используем ScrollBarData
-                g.FillRectangle(CustomSimpleScrollBarRenderer.BrushThumb, _scrollBarData.HorThumb);
+                g.FillRectangle(_thumbBrush, _scrollBarData.HorThumb);
 
                 g.ResetClip();
             }
@@ -1063,12 +1069,14 @@ namespace YDs_AwesomeDataGrid
         #region IDisposable
         protected override void Dispose(bool disposing)
         {
+            ViewportChanged -= OnViewportChanged;
             try
             {
                 // cant disposing brushes from SystemBrushes. etc
                 //_highlightBackgroundBrush?.Dispose();
                 //_highlightTextBrush?.Dispose();
-                _defaultTextBrush?.Dispose();
+                //_defaultTextBrush?.Dispose();
+                _thumbBrush.Dispose();
                 _maskBrush?.Dispose();
                 _hoveredBorderPen?.Dispose();
                 _selectedBorderPen?.Dispose();

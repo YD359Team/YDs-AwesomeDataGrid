@@ -22,23 +22,36 @@
             int rowCount,
             ScrollBarData data)
         {
-            if (!layout.NeedVertScroll)
+            if (!layout.NeedVertScroll || rowCount <= 0)
             {
                 data.VertThumb = Rectangle.Empty;
                 return;
             }
 
             int visibleRows = layout.VisibleRowCount;
-            int maxFirstRow = Math.Max(1, rowCount - visibleRows);
+            int maxFirstRow = Math.Max(0, rowCount - visibleRows);
 
             float ratio = (float)visibleRows / rowCount;
             int thumbHeight = Math.Max(
                 MIN_THUMB_SIZE,
                 (int)(layout.VertScrollRect.Height * ratio));
 
-            int thumbY = layout.VertScrollRect.Y +
-                (int)((viewport.FirstVisibleRow / (float)maxFirstRow)
-                * (layout.VertScrollRect.Height - thumbHeight));
+            int scrollRange = layout.VertScrollRect.Height - thumbHeight;
+            if (scrollRange < 0)
+                scrollRange = 0;
+
+            float t = maxFirstRow == 0
+                ? 0f
+                : viewport.FirstVisibleRow / (float)maxFirstRow;
+
+            int offsetY = (int)(t * scrollRange);
+
+            int thumbY = layout.VertScrollRect.Y + offsetY;
+
+            thumbY = Math.Clamp(
+                thumbY,
+                layout.VertScrollRect.Top,
+                layout.VertScrollRect.Bottom - thumbHeight);
 
             data.VertThumb = new Rectangle(
                 layout.VertScrollRect.X,
@@ -59,7 +72,7 @@
                 return;
             }
 
-            int totalWidth = columnCount * DEFAULT_COLUMN_WIDTH;
+            int totalWidth = columnCount * layout.ColumnWidth;
             float ratio = (float)layout.GridRect.Width / totalWidth;
 
             int thumbWidth = Math.Max(

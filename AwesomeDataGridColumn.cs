@@ -1,6 +1,6 @@
 ﻿using YDs_AwesomeDataGrid.Enums;
 
-public class AwesomeDataGridColumn
+public sealed record AwesomeDataGridColumn
 {
     public string HeaderText { get; set; }
     public string DataPropertyName { get; set; }

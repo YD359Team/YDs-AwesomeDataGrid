@@ -1,32 +1,35 @@
-﻿internal static class GraphicsHelper
+﻿namespace YDs_AwesomeDataGrid.Helpers
 {
-    private static readonly StringFormat DefaultStringFormat = new()
+    internal static class GraphicsHelper
     {
-        Alignment = StringAlignment.Center,
-        LineAlignment = StringAlignment.Center,
-    };
-    private static readonly StringFormat DebugStringFormat = new()
-    {
-        Alignment = StringAlignment.Near,
-        LineAlignment = StringAlignment.Near,
-    };
-
-    public static void DrawString(Graphics g, string text, Font font, Brush brush, RectangleF layoutRectangle)
-    {
-        g.DrawString(text, font, brush, layoutRectangle, DefaultStringFormat);
-    }
-
-    public static void DrawDebug(Graphics g, object obj, Font font, Brush brush, RectangleF layoutRectangle)
-    {
-        if (layoutRectangle == Rectangle.Empty) return;
-
-        if (obj is Rectangle rect)
+        private static readonly StringFormat DefaultStringFormat = new()
         {
-            g.DrawString($"[{rect.X},{rect.Y},{rect.Width},{rect.Height}]", font, brush, layoutRectangle, DebugStringFormat);
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center,
+        };
+        private static readonly StringFormat DebugStringFormat = new()
+        {
+            Alignment = StringAlignment.Near,
+            LineAlignment = StringAlignment.Near,
+        };
+
+        public static void DrawString(Graphics g, string text, Font font, Brush brush, RectangleF layoutRectangle)
+        {
+            g.DrawString(text, font, brush, layoutRectangle, DefaultStringFormat);
         }
-        else
+
+        public static void DrawDebug(Graphics g, object obj, Font font, Brush brush, RectangleF layoutRectangle)
         {
-            g.DrawString(obj.ToString(), font, brush, layoutRectangle, DebugStringFormat);
+            if (layoutRectangle == Rectangle.Empty) return;
+
+            if (obj is Rectangle rect)
+            {
+                g.DrawString($"[{rect.X},{rect.Y},{rect.Width},{rect.Height}]", font, brush, layoutRectangle, DebugStringFormat);
+            }
+            else
+            {
+                g.DrawString(obj.ToString(), font, brush, layoutRectangle, DebugStringFormat);
+            }
         }
     }
 }
