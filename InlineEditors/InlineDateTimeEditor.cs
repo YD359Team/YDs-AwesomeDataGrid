@@ -27,7 +27,12 @@ namespace YDs_AwesomeDataGrid
 
         private void Editor_KeyDown(object? sender, KeyEventArgs e)
         {
-            if (e.KeyCode != Keys.Enter)
+            if (e.KeyCode == Keys.Escape)
+            {
+                Close();
+                return;
+            }
+            else if (e.KeyCode != Keys.Enter)
             {
                 return;
             }
@@ -44,6 +49,7 @@ namespace YDs_AwesomeDataGrid
 
         private void HideEditor()
         {
+            this.Editor.Visible = false; 
             this.Grid.Controls.Remove(this.Editor);
             ((DateTimePicker)this.Editor).Value = FallbackValue;
         }
@@ -60,7 +66,13 @@ namespace YDs_AwesomeDataGrid
                 ((DateTimePicker)this.Editor).Value = (DateTime)cellValue;
             }
             this.Grid.Controls.Add(this.Editor);
+            this.Editor.Visible = true;
             this.Editor.Focus();
+        }
+
+        public void Close()
+        {
+            HideEditor();
         }
     }
 }

@@ -25,7 +25,12 @@ namespace YDs_AwesomeDataGrid
 
         private void Editor_KeyDown(object? sender, KeyEventArgs e)
         {
-            if (e.KeyCode != Keys.Enter)
+            if (e.KeyCode == Keys.Escape)
+            {
+                Close();
+                return;
+            }
+            else if (e.KeyCode != Keys.Enter)
             {
                 return;
             }
@@ -42,6 +47,7 @@ namespace YDs_AwesomeDataGrid
 
         private void HideEditor()
         {
+            this.Editor.Visible = false;
             this.Grid.Controls.Remove(this.Editor);
             ((ComboBox)this.Editor).Items.Clear();
         }
@@ -59,7 +65,13 @@ namespace YDs_AwesomeDataGrid
                 ((ComboBox)this.Editor).SelectedItem = cellValue;
             }
             this.Grid.Controls.Add(this.Editor);
+            this.Editor.Visible = true;
             this.Editor.Focus();
+        }
+
+        public void Close()
+        {
+            HideEditor();
         }
     }
 }

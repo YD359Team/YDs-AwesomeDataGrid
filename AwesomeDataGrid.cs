@@ -12,6 +12,10 @@ namespace YDs_AwesomeDataGrid
 {
     public class AwesomeDataGrid : ExtendedControl
     {
+        #region Event
+        private event Action ViewportChanged;
+        #endregion
+
         #region PublicProperties
 
         #region StylesOverrides
@@ -84,7 +88,6 @@ namespace YDs_AwesomeDataGrid
                     field = value;
                     LoadData();
                     RecalcRects();
-                    _cellPresCache.Clear();
                     UpdateVisibleCells();
                     Invalidate();
                     field?.OnDataChanged += AwesomeDataGrid_OnDataChanged;
@@ -108,7 +111,7 @@ namespace YDs_AwesomeDataGrid
             }
         }
 
-        private CellAddress EditingCellAddress { get; set; }
+        private CellKey EditingCellAddress { get; set; }
         #endregion
 
         #region PrivateFields
@@ -133,15 +136,23 @@ namespace YDs_AwesomeDataGrid
 
         private AwesomeDataGridColumn[] _columns = [];
 
+        #region InlineEditors
         private readonly Dictionary<Type, IInlineEditor> _editors = new();
+        private IInlineEditor _currentEditor;
         private readonly Dictionary<Type, object[]> _enumValues = new();
-        private readonly Dictionary<CellAddress, string> _cellPresCache = new(256);
+        #endregion
+
+        #region VisibleCellCache
+        private readonly CellVisualCache _cellCache = new();
+        private int _cachedFirstRow = -1;
+        private int _cachedLastRow = -1;
+        #endregion
 
         #region Graphics
         private readonly Brush _defaultTextBrush = Brushes.Black;
         private readonly Brush _highlightTextBrush = SystemBrushes.HighlightText;
         private readonly Brush _highlightBackgroundBrush = new SolidBrush(Color.FromArgb(128, SystemColors.Highlight));
-        private readonly Brush _maskBrush = new SolidBrush(Color.FromArgb(128, Color.DarkGray));
+        private readonly Brush _maskBrush = new SolidBrush(Color.FromArgb(100, Color.DarkGray));
         private readonly Pen _selectedBorderPen = new(SystemColors.HighlightText, 1f);
         private readonly Pen _hoveredBorderPen = new(Color.DeepSkyBlue, 1f);
         #endregion
@@ -159,15 +170,15 @@ namespace YDs_AwesomeDataGrid
         #endregion
 
         #region PublicAPI
-        public void SetData(int rows, int columns, object value)
+        public void SetData(int row, int column, object value)
         {
-            this.DataProvider.SetData(rows, columns, value);
-            _cellPresCache[new(rows, columns)] = GetCellPres(value, _columns[columns].DataType);
+            this.DataProvider.SetData(row, column, value);
+            InvalidateCellCache(row, column);
         }
 
-        public object GetData(int rows, int columns)
+        public object GetData(int row, int column)
         {
-            return this.DataProvider.GetData(rows, columns);
+            return this.DataProvider.GetData(row, column);
         }
         #endregion
 
@@ -178,6 +189,7 @@ namespace YDs_AwesomeDataGrid
             InitEditors();
             //
             RecalcRects();
+            ViewportChanged += OnViewportChanged; 
         }
 
         private void InitEditors()
@@ -208,7 +220,7 @@ namespace YDs_AwesomeDataGrid
         {
             e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            e.Graphics.FillRectangle(Brushes.White, 0, 0, this.Width, this.Height);
+            e.Graphics.FillRectangle(Brushes.White, this.ClientRectangle);
 
             if (DataProvider == EmptyProvider)
                 return;
@@ -240,132 +252,6 @@ namespace YDs_AwesomeDataGrid
             return row >= 0 && row < RowCount;
         }
 
-        private void DrawBorder(Graphics g)
-        {
-            g.DrawRectangle(Pens.Black, 0, 0, this.Width - 1, this.Height - 1);
-        }
-
-        private void DrawMask(Graphics g)
-        {
-            g.FillRectangle(_maskBrush, this.ClientRectangle);
-        }
-
-        private void DrawScrollBars(Graphics g)
-        {
-            if (_needVertScroll)
-            {
-                g.SetClip(_layout.VertScrollRect);
-                g.FillRectangle(Brushes.Gainsboro, _layout.VertScrollRect);
-
-                // Используем ScrollBarData
-                g.FillRectangle(CustomSimpleScrollBarRenderer.BrushThumb, _scrollBarData.VertThumb);
-
-                g.ResetClip();
-            }
-
-            if (_needHorScroll)
-            {
-                g.SetClip(_layout.HorScrollRect);
-                g.FillRectangle(Brushes.Gainsboro, _layout.HorScrollRect);
-
-                // Используем ScrollBarData
-                g.FillRectangle(CustomSimpleScrollBarRenderer.BrushThumb, _scrollBarData.HorThumb);
-
-                g.ResetClip();
-            }
-        }
-
-        private void DrawCells(Graphics g)
-        {
-            int startRow = _viewPort.FirstVisibleRow;
-            int endRow = Math.Min(RowCount, startRow + this.VisibleRowCount);
-
-            for (int row = startRow; row < endRow; row++)
-            {
-                int y = _layout.HeaderHeight + (row - startRow) * _layout.RowHeight;
-
-                for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
-                {
-                    Rectangle cellRect = GetCellRect(row, col);
-
-                    g.SetClip(cellRect);
-
-                    string pres = _cellPresCache.TryGetValue(new(row, col), out string cachedVal)
-                        ? cachedVal
-                        : "ERR";
-
-                    bool isSelected = _selector.IsVisible &&
-                                      (_selectionType == ADGSelectionTypes.Cell
-                                        ? (_selector.Row == row && _selector.Column == col)
-                                        : (_selector.Row == row));
-
-                    bool isHovered =
-                        !isSelected &&
-                        _hoverSelector.IsVisible &&
-                        _hoverSelector.Row == row &&
-                        _hoverSelector.Column == col;
-
-                    Rectangle r = Rectangle.Inflate(cellRect, -1, -1);
-
-                    if (isSelected)
-                    {
-                        Rectangle selectionRect = _selectionType == ADGSelectionTypes.FullRow && _isRowHeaderVisible
-                            ? new Rectangle(0, cellRect.Y, _layout.GridRect.Width, cellRect.Height)
-                            : cellRect;
-
-                        g.FillRectangle(_columns[col].DataType == typeof(bool) ? _highlightBackgroundBrush : SystemBrushes.Highlight, selectionRect);
-                        g.DrawRectangle(_selectedBorderPen, Rectangle.Inflate(cellRect, -1, -1));
-                    }
-                    else if (isHovered)
-                    {
-                        g.DrawRectangle(_hoveredBorderPen, r);
-                    }
-                    else
-                    {
-                        g.DrawRectangle(Pens.Black, r);
-                    }
-
-                    if (_columns[col].DataType == typeof(bool))
-                    {
-                        var state = Convert.ToBoolean(pres)
-                           ? (isSelected ? CheckBoxState.CheckedHot : CheckBoxState.CheckedNormal)
-                           : (isSelected ? CheckBoxState.UncheckedHot : CheckBoxState.UncheckedNormal);
-
-                        CheckBoxRenderer.DrawCheckBox(g,
-                            new(cellRect.X + (cellRect.Width - 14) / 2, cellRect.Y + (cellRect.Height - 14) / 2),
-                            state);
-                    }
-                    else
-                    {
-                        GraphicsHelper.DrawString(g, pres, this.Font, isSelected ? _highlightTextBrush : _defaultTextBrush, cellRect);
-                    }
-
-                    g.ResetClip();
-                }
-            }
-        }
-
-        private void DrawColumnHeaders(Graphics g)
-        {
-            for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
-            {
-                int x = _layout.GridRect.X + (col - _viewPort.FirstVisibleColumn) * _layout.ColumnWidth;
-                Rectangle rect = new(x, 0, _layout.ColumnWidth, _layout.RowHeight);
-
-                g.FillRectangle(Brushes.LightGray, rect);
-                g.DrawRectangle(Pens.Black, rect);
-
-                string headerText = _columns[col].SortingDirection switch
-                {
-                    ADGSortingDirection.None => _columns[col].HeaderText,
-                    ADGSortingDirection.Ascending => _columns[col].HeaderText + " ▲",
-                    ADGSortingDirection.Descending => _columns[col].HeaderText + " ▼",
-                    _ => _columns[col].HeaderText,
-                };
-                GraphicsHelper.DrawString(g, headerText, this.Font, Brushes.Black, rect);
-            }
-        }
-
         public Rectangle GetRowHeaderCellRect(int row, int firstVisibleRow)
         {
             if (row < firstVisibleRow || row >= firstVisibleRow + VisibleRowCount)
@@ -381,41 +267,6 @@ namespace YDs_AwesomeDataGrid
             );
         }
 
-        private void DrawRowHeaders(Graphics g, int firstVisibleRow)
-        {
-            if (!IsRowHeaderVisible)
-                return;
-
-            for (int row = firstVisibleRow;
-                 row < firstVisibleRow + VisibleRowCount && row < RowCount;
-                 row++)
-            {
-                Rectangle r = GetRowHeaderCellRect(row, firstVisibleRow);
-
-                bool selected = row == _selectedRow;
-                bool hot = row == _hotRow;
-
-                Color back =
-                    selected ? SystemColors.Highlight :
-                    hot ? Color.LightGray :
-                    SystemColors.Control;
-
-                using var b = new SolidBrush(back);
-                g.FillRectangle(b, r);
-
-                ControlPaint.DrawBorder(g, r, SystemColors.ControlDark, ButtonBorderStyle.Solid);
-
-                TextRenderer.DrawText(
-                    g,
-                    (row + 1).ToString(),
-                    Font,
-                    r,
-                    selected ? SystemColors.HighlightText : SystemColors.ControlText,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
-                );
-            }
-        }
-
         override protected void OnResize(EventArgs e)
         {
             base.OnResize(e);
@@ -423,7 +274,6 @@ namespace YDs_AwesomeDataGrid
             _viewPort.Width = this.Width;
             _viewPort.Height = this.Height;
             RecalcRects();
-            _cellPresCache.Clear();
             UpdateVisibleCells();
             Invalidate();
         }
@@ -462,8 +312,17 @@ namespace YDs_AwesomeDataGrid
                 // Toggle selection visibility
                 _selector.IsVisible = !_selector.IsVisible;
                 SmartInvalidate(GetCellRect(_selector.Row, _selector.Column));
-                _selector.Row = 0;
-                _selector.Column = 0;
+            }
+            // Space or Enter
+            if (e.KeyCode is Keys.Space or Keys.Enter)
+            {
+                if (!_selector.IsVisible) return;
+
+                int col = _selector.Column;
+                if (_columns[col].IsReadOnly) return;
+
+                int row = _selector.Row;
+                RequestCellEditing(row, col);
             }
             // Del
             else if (e.KeyCode == Keys.Delete)
@@ -475,7 +334,7 @@ namespace YDs_AwesomeDataGrid
 
                 int row = _selector.Row;
                 this.DataProvider.SetData(row, col, GetDefaultValueForType(_columns[col].DataType));
-                UpdateVisibleCells();
+                InvalidateCellCache(row, col);
                 SmartInvalidate(GetCellRect(row, col));
             }
             // Ctrl+C
@@ -517,7 +376,7 @@ namespace YDs_AwesomeDataGrid
                     return;
                 }
                 this.DataProvider.SetData(row, col, value!);
-                UpdateVisibleCells();
+                InvalidateCellCache(row, col);
                 SmartInvalidate(GetCellRect(row, col));
             }
             // arrows
@@ -655,7 +514,8 @@ namespace YDs_AwesomeDataGrid
                 column.SortingDirection = sortDir;
 
                 this.DataProvider.SortColumn(column.DataPropertyName, sortDir);
-                _cellPresCache.Clear();
+
+                ViewportChanged?.Invoke();
                 UpdateVisibleCells();
                 Invalidate();
             }
@@ -684,22 +544,41 @@ namespace YDs_AwesomeDataGrid
             {
                 if (_columns[col].IsReadOnly) return;
 
-                ChangeGridState(GridInnerState.Editing);
-
-                if (_columns[col].DataType.IsEnum)
-                {
-                    this.EditingCellAddress = new(row, col);
-                    var enumVals = _enumValues[_columns[col].DataType];
-                    _editors[typeof(Enum)].BeginEdit(GetCellRect(row, col), 
-                        GetData(this.EditingCellAddress.Row, this.EditingCellAddress.Col),
-                        enumVals);
-                }
-                else if (_editors.TryGetValue(_columns[col].DataType, out var editor))
-                {
-                    this.EditingCellAddress = new(row, col);
-                    editor.BeginEdit(GetCellRect(row, col), GetData(this.EditingCellAddress.Row, this.EditingCellAddress.Col));
-                }
+                RequestCellEditing(row, col);
             }
+        }
+
+        private void RequestCellEditing(int row, int col)
+        {
+            if (_columns[col].DataType == typeof(bool))
+            {
+                SetData(row, col, !(bool)GetData(row, col));
+                _cellCache.Invalidate(row, col);
+                Invalidate(GetCellRect(_selector.Row, _selector.Column));
+                return;
+            }
+
+            ChangeGridState(GridInnerState.Editing);
+
+            // show editor with stored values for enum
+            if (_columns[col].DataType.IsEnum)
+            {
+                this.EditingCellAddress = new(row, col);
+                var enumVals = _enumValues[_columns[col].DataType];
+                _currentEditor = _editors[typeof(Enum)];
+                _currentEditor.BeginEdit(GetCellRect(row, col),
+                    GetData(this.EditingCellAddress.Row, this.EditingCellAddress.Column),
+                    enumVals);
+            }
+            // show typed editor for other types
+            else if (_editors.TryGetValue(_columns[col].DataType, out var editor))
+            {
+                _currentEditor = editor;
+                this.EditingCellAddress = new(row, col);
+                editor.BeginEdit(GetCellRect(row, col), GetData(this.EditingCellAddress.Row, this.EditingCellAddress.Column));
+            }
+
+            return;
         }
 
         protected override void OnMouseWheel(MouseEventArgs e)
@@ -716,7 +595,6 @@ namespace YDs_AwesomeDataGrid
 
             UpdateScrollThumbs();
 
-            _cellPresCache.Clear();
             UpdateVisibleCells();
             Invalidate();
         }
@@ -764,6 +642,7 @@ namespace YDs_AwesomeDataGrid
             _needHorScroll = _layout.NeedHorScroll;
 
             UpdateScrollThumbs();
+            ViewportChanged?.Invoke();
         }
 
         private Rectangle GetCellRect(int row, int col)
@@ -807,27 +686,57 @@ namespace YDs_AwesomeDataGrid
             );
         }
 
+        #region CellCache
         // visible cell cache
         private void UpdateVisibleCells()
         {
             int startRow = _viewPort.FirstVisibleRow;
-            int endRow = Math.Min(RowCount, startRow + this.VisibleRowCount);
+            int endRow = Math.Min(RowCount, startRow + VisibleRowCount);
+
+            if (startRow != _cachedFirstRow || endRow != _cachedLastRow)
+            {
+                TrimCache(startRow, endRow);
+                _cachedFirstRow = startRow;
+                _cachedLastRow = endRow;
+            }
 
             for (int row = startRow; row < endRow; row++)
             {
-                int y = _layout.GridRect.Y + (row - startRow) * _layout.RowHeight;
-
                 for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
                 {
-                    CellAddress addr = new(row, col);
-                    if (!_cellPresCache.TryGetValue(addr, out string cachedVal))
+                    _cellCache.Get(row, col, () =>
                     {
-                        string value = GetCellPres(this.DataProvider.GetData(row, col), _columns[col].DataType);
-                        _cellPresCache.Add(addr, value);
-                    }
+                        var value = DataProvider.GetData(row, col);
+                        return new CellVisual
+                        {
+                            Text = GetCellPres(value, _columns[col].DataType),
+                            Style = ResolveCellStyle(row, col, value)
+                        };
+                    });
                 }
             }
         }
+
+        private void TrimCache(int firstRow, int lastRow)
+        {
+            for (int row = _cachedFirstRow; row < firstRow; row++)
+                _cellCache.InvalidateRow(row);
+
+            for (int row = lastRow; row < _cachedLastRow; row++)
+                _cellCache.InvalidateRow(row);
+        }
+
+        private void InvalidateCellCache(int row, int col)
+        {
+            _cellCache.Invalidate(row, col);
+        }
+
+        private CellStyle ResolveCellStyle(int row, int col, object value)
+        {
+            // простая логика, можно расширить
+            return CellStyle.Default;
+        }
+        #endregion
 
         private void EnsureSelectionVisible()
         {
@@ -857,9 +766,8 @@ namespace YDs_AwesomeDataGrid
 
             if (updated)
             {
-                _cellPresCache.Clear();
                 UpdateVisibleCells();
-                UpdateScrollThumbs(); // чтобы бегунок скролла обновился
+                UpdateScrollThumbs();
             }
         }
 
@@ -873,7 +781,6 @@ namespace YDs_AwesomeDataGrid
         // move cursor to row,cel
         private void MoveTo(int row, int col)
         {
-            // ограничиваем по границам
             row = Math.Max(0, Math.Min(RowCount - 1, row));
             col = Math.Max(0, Math.Min(ColumnCount - 1, col));
 
@@ -881,7 +788,6 @@ namespace YDs_AwesomeDataGrid
             _selector.Column = col;
             _selector.IsVisible = true;
 
-            // Листаем viewport, если селекция ушла за видимую область
             int firstRow = _viewPort.FirstVisibleRow;
             int lastRow = firstRow + VisibleRowCount - 1;
 
@@ -890,7 +796,6 @@ namespace YDs_AwesomeDataGrid
             else if (row > lastRow)
                 _viewPort.FirstVisibleRow = row - VisibleRowCount + 1;
 
-            // Можно сделать тоже самое по столбцам (если горизонтальный скролл)
             int firstCol = _viewPort.FirstVisibleColumn;
             int visibleCols = (_layout.GridRect.Width + _layout.ColumnWidth - 1) / _layout.ColumnWidth;
             int lastCol = firstCol + visibleCols - 1;
@@ -900,8 +805,6 @@ namespace YDs_AwesomeDataGrid
             else if (col > lastCol)
                 _viewPort.FirstVisibleColumn = col - visibleCols + 1;
 
-            // Обновляем видимые клетки
-            _cellPresCache.Clear();
             UpdateVisibleCells();
             UpdateScrollThumbs();
             Invalidate();
@@ -909,6 +812,7 @@ namespace YDs_AwesomeDataGrid
 
         private string GetCellPres(object value, Type dataType)
         {
+            if (value == null) return string.Empty;
             return dataType switch
             {
                 Type t when t == typeof(float) => ((float)value).ToString("F2"),
@@ -947,9 +851,183 @@ namespace YDs_AwesomeDataGrid
 
         private void CancelEditing()
         {
+            if (_currentEditor is null || !_currentEditor.Editor.Visible) return;
 
+            _currentEditor.Close();
         }
 
+        #endregion
+
+        #region Paint
+        private void DrawBorder(Graphics g)
+        {
+            g.DrawRectangle(Pens.Black, 0, 0, this.Width - 1, this.Height - 1);
+        }
+
+        private void DrawMask(Graphics g)
+        {
+            g.FillRectangle(_maskBrush, this.ClientRectangle);
+        }
+
+        private void DrawScrollBars(Graphics g)
+        {
+            if (_needVertScroll)
+            {
+                g.SetClip(_layout.VertScrollRect);
+                g.FillRectangle(Brushes.Gainsboro, _layout.VertScrollRect);
+
+                // Используем ScrollBarData
+                g.FillRectangle(CustomSimpleScrollBarRenderer.BrushThumb, _scrollBarData.VertThumb);
+
+                g.ResetClip();
+            }
+
+            if (_needHorScroll)
+            {
+                g.SetClip(_layout.HorScrollRect);
+                g.FillRectangle(Brushes.Gainsboro, _layout.HorScrollRect);
+
+                // Используем ScrollBarData
+                g.FillRectangle(CustomSimpleScrollBarRenderer.BrushThumb, _scrollBarData.HorThumb);
+
+                g.ResetClip();
+            }
+        }
+
+        private void DrawCells(Graphics g)
+        {
+            int startRow = _viewPort.FirstVisibleRow;
+            int endRow = Math.Min(RowCount, startRow + this.VisibleRowCount);
+
+            for (int row = startRow; row < endRow; row++)
+            {
+                int y = _layout.HeaderHeight + (row - startRow) * _layout.RowHeight;
+
+                for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
+                {
+                    Rectangle cellRect = GetCellRect(row, col);
+
+                    g.SetClip(cellRect);
+
+                    var visual = _cellCache.Get(row, col, () =>
+                    {
+                        var value = DataProvider.GetData(row, col);
+                        return new CellVisual
+                        {
+                            Text = GetCellPres(value, _columns[col].DataType),
+                            Style = ResolveCellStyle(row, col, value)
+                        };
+                    });
+
+                    string pres = visual.Text;
+
+                    bool isSelected = _selector.IsVisible &&
+                                      (_selectionType == ADGSelectionTypes.Cell
+                                        ? (_selector.Row == row && _selector.Column == col)
+                                        : (_selector.Row == row));
+
+                    bool isHovered =
+                        !isSelected &&
+                        _hoverSelector.IsVisible &&
+                        _hoverSelector.Row == row &&
+                        _hoverSelector.Column == col;
+
+                    Rectangle r = Rectangle.Inflate(cellRect, -1, -1);
+
+                    if (isSelected)
+                    {
+                        Rectangle selectionRect = _selectionType == ADGSelectionTypes.FullRow && _isRowHeaderVisible
+                            ? new Rectangle(0, cellRect.Y, _layout.GridRect.Width, cellRect.Height)
+                            : cellRect;
+
+                        g.FillRectangle(_columns[col].DataType == typeof(bool) ? _highlightBackgroundBrush : SystemBrushes.Highlight, selectionRect);
+                        g.DrawRectangle(_selectedBorderPen, Rectangle.Inflate(cellRect, -1, -1));
+                    }
+                    else if (isHovered)
+                    {
+                        g.DrawRectangle(_hoveredBorderPen, r);
+                    }
+                    else
+                    {
+                        g.DrawRectangle(Pens.Black, r);
+                    }
+
+                    if (_columns[col].DataType == typeof(bool))
+                    {
+                        _ = bool.TryParse(pres, out bool b);
+                        var state = b
+                           ? (isSelected ? CheckBoxState.CheckedHot : CheckBoxState.CheckedNormal)
+                           : (isSelected ? CheckBoxState.UncheckedHot : CheckBoxState.UncheckedNormal);
+
+                        CheckBoxRenderer.DrawCheckBox(g,
+                            new(cellRect.X + (cellRect.Width - 14) / 2, cellRect.Y + (cellRect.Height - 14) / 2),
+                            state);
+                    }
+                    else
+                    {
+                        GraphicsHelper.DrawString(g, pres, this.Font, isSelected ? _highlightTextBrush : _defaultTextBrush, cellRect);
+                    }
+
+                    g.ResetClip();
+                }
+            }
+        }
+
+        private void DrawColumnHeaders(Graphics g)
+        {
+            for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
+            {
+                int x = _layout.GridRect.X + (col - _viewPort.FirstVisibleColumn) * _layout.ColumnWidth;
+                Rectangle rect = new(x, 0, _layout.ColumnWidth, _layout.RowHeight);
+
+                g.FillRectangle(Brushes.LightGray, rect);
+                g.DrawRectangle(Pens.Black, rect);
+
+                string headerText = _columns[col].SortingDirection switch
+                {
+                    ADGSortingDirection.None => _columns[col].HeaderText,
+                    ADGSortingDirection.Ascending => _columns[col].HeaderText + " ▲",
+                    ADGSortingDirection.Descending => _columns[col].HeaderText + " ▼",
+                    _ => _columns[col].HeaderText,
+                };
+                GraphicsHelper.DrawString(g, headerText, this.Font, Brushes.Black, rect);
+            }
+        }
+
+        private void DrawRowHeaders(Graphics g, int firstVisibleRow)
+        {
+            if (!IsRowHeaderVisible)
+                return;
+
+            for (int row = firstVisibleRow;
+                 row < firstVisibleRow + VisibleRowCount && row < RowCount;
+                 row++)
+            {
+                Rectangle r = GetRowHeaderCellRect(row, firstVisibleRow);
+
+                bool selected = row == _selectedRow;
+                bool hot = row == _hotRow;
+
+                Color back =
+                    selected ? SystemColors.Highlight :
+                    hot ? Color.LightGray :
+                    SystemColors.Control;
+
+                using var b = new SolidBrush(back);
+                g.FillRectangle(b, r);
+
+                ControlPaint.DrawBorder(g, r, SystemColors.ControlDark, ButtonBorderStyle.Solid);
+
+                TextRenderer.DrawText(
+                    g,
+                    (row + 1).ToString(),
+                    Font,
+                    r,
+                    selected ? SystemColors.HighlightText : SystemColors.ControlText,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
+                );
+            }
+        }
         #endregion
 
         #region EventHandlers
@@ -957,21 +1035,48 @@ namespace YDs_AwesomeDataGrid
         {
             this.RowCount = this.DataProvider.RowCount;
             RecalcRects();
-            _cellPresCache.Clear();
             UpdateVisibleCells();
             Invalidate();
         }
 
+        private void OnViewportChanged()
+        {
+            int firstRow = _viewPort.FirstVisibleRow;
+            int lastRow = Math.Min(RowCount, firstRow + VisibleRowCount);
+
+            _cellCache.UpdateViewport(firstRow, lastRow);
+        }
+
         private void InlineEditor_OnEndEdit(IInlineEditor editor)
         {
-            SetData(this.EditingCellAddress.Row, this.EditingCellAddress.Col, editor.Value);
-            SmartInvalidate(GetCellRect(this.EditingCellAddress.Row, this.EditingCellAddress.Col));
+            SetData(this.EditingCellAddress.Row, this.EditingCellAddress.Column, editor.Value);
+            SmartInvalidate(GetCellRect(this.EditingCellAddress.Row, this.EditingCellAddress.Column));
             this.EditingCellAddress = default;
         }
 
         private void InlineEditor_OnLostFocus()
         {
             ChangeGridState(GridInnerState.Default);
+        }
+        #endregion
+
+        #region IDisposable
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                // cant disposing brushes from SystemBrushes. etc
+                //_highlightBackgroundBrush?.Dispose();
+                //_highlightTextBrush?.Dispose();
+                _defaultTextBrush?.Dispose();
+                _maskBrush?.Dispose();
+                _hoveredBorderPen?.Dispose();
+                _selectedBorderPen?.Dispose();
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
         }
         #endregion
     }

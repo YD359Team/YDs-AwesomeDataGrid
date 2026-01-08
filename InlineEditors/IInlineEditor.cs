@@ -11,5 +11,6 @@
         object Value { get; }
 
         void BeginEdit(Rectangle rect, object? cellValue, object[]? enumValues = null);
+        void Close();
     }
 }
