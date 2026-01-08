@@ -6,7 +6,7 @@ Simple and faster DataGridView without dependencies
 
 - ✅ Just Control-based class with GDI+ rendering, no magic
 - ✅ Inline editors (for string, DateTime, Enum, Int32) via small cached controls + checkboxes for Boolean
-- ✅ Virtualised by default
+- ✅ Virtualized by default
 
 ## GetStarted
 

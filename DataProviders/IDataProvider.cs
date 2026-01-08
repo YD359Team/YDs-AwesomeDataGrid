@@ -1,4 +1,6 @@
-﻿public interface IDataProvider
+﻿using YDs_AwesomeDataGrid.Enums;
+
+public interface IDataProvider
 {
     event Action OnDataChanged;
 
@@ -10,5 +12,5 @@
 
     int RowCount { get; }
 
-    void SortColumn(string dataPropertyName, AwesomeDataGridSortingDirection sortingDirection);
+    void SortColumn(string dataPropertyName, ADGSortingDirection sortingDirection);
 }

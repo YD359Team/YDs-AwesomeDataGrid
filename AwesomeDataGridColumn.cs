@@ -1,11 +1,13 @@
-﻿public class AwesomeDataGridColumn
+﻿using YDs_AwesomeDataGrid.Enums;
+
+public class AwesomeDataGridColumn
 {
     public string HeaderText { get; set; }
     public string DataPropertyName { get; set; }
     public Type DataType { get; set; }
     public bool IsReadOnly { get; set; }
     public bool AllowSort { get; set; }
-    public AwesomeDataGridSortingDirection SortingDirection { get; set; }
+    public ADGSortingDirection SortingDirection { get; set; }
 
     public AwesomeDataGridColumn(ColumnDescription columnDescription)
     {

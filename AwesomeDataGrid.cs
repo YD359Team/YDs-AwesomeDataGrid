@@ -43,10 +43,10 @@ namespace YDs_AwesomeDataGrid
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public int RowCount { get; private set; }
 
-        private AwesomeDataGridSelectionTypes _selectionType = AwesomeDataGridSelectionTypes.Cell;
+        private ADGSelectionTypes _selectionType = ADGSelectionTypes.Cell;
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public AwesomeDataGridSelectionTypes SelectionType
+        public ADGSelectionTypes SelectionType
         {
             get => _selectionType;
             set
@@ -119,6 +119,7 @@ namespace YDs_AwesomeDataGrid
         private readonly ScrollBarData _scrollBarData = new();
         private readonly Selector _selector = new();
         private readonly HoverSelector _hoverSelector = new();
+        private GridInnerState _gridInnerState;
         private int _visibleRowCount;
         private bool _needVertScroll;
         private bool _needHorScroll;
@@ -140,6 +141,7 @@ namespace YDs_AwesomeDataGrid
         private readonly Brush _defaultTextBrush = Brushes.Black;
         private readonly Brush _highlightTextBrush = SystemBrushes.HighlightText;
         private readonly Brush _highlightBackgroundBrush = new SolidBrush(Color.FromArgb(128, SystemColors.Highlight));
+        private readonly Brush _maskBrush = new SolidBrush(Color.FromArgb(128, Color.DarkGray));
         private readonly Pen _selectedBorderPen = new(SystemColors.HighlightText, 1f);
         private readonly Pen _hoveredBorderPen = new(Color.DeepSkyBlue, 1f);
         #endregion
@@ -215,6 +217,10 @@ namespace YDs_AwesomeDataGrid
             DrawColumnHeaders(e.Graphics);
             DrawCells(e.Graphics);
             DrawScrollBars(e.Graphics);
+            if (_gridInnerState == GridInnerState.Editing)
+            {
+                DrawMask(e.Graphics);
+            }
             DrawBorder(e.Graphics);
         }
 
@@ -237,6 +243,11 @@ namespace YDs_AwesomeDataGrid
         private void DrawBorder(Graphics g)
         {
             g.DrawRectangle(Pens.Black, 0, 0, this.Width - 1, this.Height - 1);
+        }
+
+        private void DrawMask(Graphics g)
+        {
+            g.FillRectangle(_maskBrush, this.ClientRectangle);
         }
 
         private void DrawScrollBars(Graphics g)
@@ -284,7 +295,7 @@ namespace YDs_AwesomeDataGrid
                         : "ERR";
 
                     bool isSelected = _selector.IsVisible &&
-                                      (_selectionType == AwesomeDataGridSelectionTypes.Cell
+                                      (_selectionType == ADGSelectionTypes.Cell
                                         ? (_selector.Row == row && _selector.Column == col)
                                         : (_selector.Row == row));
 
@@ -298,7 +309,7 @@ namespace YDs_AwesomeDataGrid
 
                     if (isSelected)
                     {
-                        Rectangle selectionRect = _selectionType == AwesomeDataGridSelectionTypes.FullRow && _isRowHeaderVisible
+                        Rectangle selectionRect = _selectionType == ADGSelectionTypes.FullRow && _isRowHeaderVisible
                             ? new Rectangle(0, cellRect.Y, _layout.GridRect.Width, cellRect.Height)
                             : cellRect;
 
@@ -346,9 +357,9 @@ namespace YDs_AwesomeDataGrid
 
                 string headerText = _columns[col].SortingDirection switch
                 {
-                    AwesomeDataGridSortingDirection.None => _columns[col].HeaderText,
-                    AwesomeDataGridSortingDirection.Ascending => _columns[col].HeaderText + " ▲",
-                    AwesomeDataGridSortingDirection.Descending => _columns[col].HeaderText + " ▼",
+                    ADGSortingDirection.None => _columns[col].HeaderText,
+                    ADGSortingDirection.Ascending => _columns[col].HeaderText + " ▲",
+                    ADGSortingDirection.Descending => _columns[col].HeaderText + " ▼",
                     _ => _columns[col].HeaderText,
                 };
                 GraphicsHelper.DrawString(g, headerText, this.Font, Brushes.Black, rect);
@@ -442,6 +453,12 @@ namespace YDs_AwesomeDataGrid
             // ESC
             if (e.KeyCode == Keys.Escape)
             {
+                if (_gridInnerState == GridInnerState.Editing)
+                {
+                    ChangeGridState(GridInnerState.Default);
+                    return;
+                }
+
                 // Toggle selection visibility
                 _selector.IsVisible = !_selector.IsVisible;
                 SmartInvalidate(GetCellRect(_selector.Row, _selector.Column));
@@ -557,6 +574,8 @@ namespace YDs_AwesomeDataGrid
         {
             base.OnMouseMove(e);
 
+            if (_gridInnerState == GridInnerState.Editing) return;
+
             Rectangle mouseRect = new(e.Location, new(1, 1));
 
             if (_layout.VertScrollRect.IntersectsWith(mouseRect))
@@ -619,18 +638,18 @@ namespace YDs_AwesomeDataGrid
 
                 if (!column.AllowSort) return;
 
-                if (_columns.Any(c => c != column && c.SortingDirection != AwesomeDataGridSortingDirection.None))
+                if (_columns.Any(c => c != column && c.SortingDirection != ADGSortingDirection.None))
                 {
-                    _columns.SingleOrDefault(c => c.SortingDirection != AwesomeDataGridSortingDirection.None)!
-                        .SortingDirection = AwesomeDataGridSortingDirection.None;
+                    _columns.SingleOrDefault(c => c.SortingDirection != ADGSortingDirection.None)!
+                        .SortingDirection = ADGSortingDirection.None;
                 }
 
-                AwesomeDataGridSortingDirection sortDir = column.SortingDirection switch
+                ADGSortingDirection sortDir = column.SortingDirection switch
                 {
-                    AwesomeDataGridSortingDirection.None => AwesomeDataGridSortingDirection.Ascending,
-                    AwesomeDataGridSortingDirection.Ascending => AwesomeDataGridSortingDirection.Descending,
-                    AwesomeDataGridSortingDirection.Descending => AwesomeDataGridSortingDirection.Ascending,
-                    _ => AwesomeDataGridSortingDirection.None,
+                    ADGSortingDirection.None => ADGSortingDirection.Ascending,
+                    ADGSortingDirection.Ascending => ADGSortingDirection.Descending,
+                    ADGSortingDirection.Descending => ADGSortingDirection.Ascending,
+                    _ => ADGSortingDirection.None,
                 };
 
                 column.SortingDirection = sortDir;
@@ -665,6 +684,8 @@ namespace YDs_AwesomeDataGrid
             {
                 if (_columns[col].IsReadOnly) return;
 
+                ChangeGridState(GridInnerState.Editing);
+
                 if (_columns[col].DataType.IsEnum)
                 {
                     this.EditingCellAddress = new(row, col);
@@ -683,6 +704,8 @@ namespace YDs_AwesomeDataGrid
 
         protected override void OnMouseWheel(MouseEventArgs e)
         {
+            if (_gridInnerState == GridInnerState.Editing) return;
+
             if (e.Delta > 0)
                 _viewPort.FirstVisibleRow = Math.Max(0, _viewPort.FirstVisibleRow - 1);
             else
@@ -726,6 +749,7 @@ namespace YDs_AwesomeDataGrid
             this.RowCount = this.DataProvider.RowCount;
         }
 
+        // recalc layout
         private void RecalcRects()
         {
             _layout.Recalc(
@@ -783,6 +807,7 @@ namespace YDs_AwesomeDataGrid
             );
         }
 
+        // visible cell cache
         private void UpdateVisibleCells()
         {
             int startRow = _viewPort.FirstVisibleRow;
@@ -845,6 +870,7 @@ namespace YDs_AwesomeDataGrid
                 Invalidate(rect);
         }
 
+        // move cursor to row,cel
         private void MoveTo(int row, int col)
         {
             // ограничиваем по границам
@@ -885,10 +911,10 @@ namespace YDs_AwesomeDataGrid
         {
             return dataType switch
             {
-                Type t when t == typeof(DateTime) => ((DateTime)value).ToShortDateString(),
                 Type t when t == typeof(float) => ((float)value).ToString("F2"),
                 Type t when t == typeof(double) => ((double)value).ToString("F2"),
                 Type t when t == typeof(decimal) => ((decimal)value).ToString("F2"),
+                Type t when t == typeof(DateTime) => ((DateTime)value).ToShortDateString(),
                 _ => value?.ToString() ?? string.Empty
             };
         }
@@ -907,6 +933,21 @@ namespace YDs_AwesomeDataGrid
                 Type t when t.IsEnum => _enumValues[t].First(),
                 _ => null,
             };
+        }
+
+        private void ChangeGridState(GridInnerState newState)
+        {
+            if (_gridInnerState == GridInnerState.Editing)
+            {
+                CancelEditing();
+            }
+            _gridInnerState = newState;
+            Invalidate();
+        } 
+
+        private void CancelEditing()
+        {
+
         }
 
         #endregion
@@ -930,7 +971,7 @@ namespace YDs_AwesomeDataGrid
 
         private void InlineEditor_OnLostFocus()
         {
-            // do nothing
+            ChangeGridState(GridInnerState.Default);
         }
         #endregion
     }

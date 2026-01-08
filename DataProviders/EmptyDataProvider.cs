@@ -1,4 +1,6 @@
-﻿public class EmptyDataProvider : IDataProvider
+﻿using YDs_AwesomeDataGrid.Enums;
+
+public class EmptyDataProvider : IDataProvider
 {
     public event Action OnDataChanged;
 
@@ -19,7 +21,7 @@
 
     public int RowCount => 0;
 
-    public void SortColumn(string dataPropertyName, AwesomeDataGridSortingDirection sortingDirection)
+    public void SortColumn(string dataPropertyName, ADGSortingDirection sortingDirection)
     {
         // Do nothing
     }

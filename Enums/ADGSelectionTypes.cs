@@ -1,6 +1,6 @@
 ﻿namespace YDs_AwesomeDataGrid.Enums
 {
-    public enum AwesomeDataGridSelectionTypes : byte
+    public enum ADGSelectionTypes : byte
     {
         Cell = 0,
         FullRow
