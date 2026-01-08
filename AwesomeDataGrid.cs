@@ -516,7 +516,7 @@ namespace YDs_AwesomeDataGrid
                 this.DataProvider.SortColumn(column.DataPropertyName, sortDir);
 
                 ViewportChanged?.Invoke();
-                UpdateVisibleCells();
+                _cellCache.InvalidateAll();
                 Invalidate();
             }
             // find cell by point
