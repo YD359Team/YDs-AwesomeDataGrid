@@ -20,7 +20,8 @@ Simple and faster DataGridView without dependencies
 3. Image support
 4. Multiselect
 5. Easy CSV load and reflected-driven DataSource
-6. Export data from file
+6. Export data to file
+7. [Maybe] Render control to Bitmap like Avalonia
 
 ## GetStarted
 
