@@ -11,6 +11,7 @@ using System.Drawing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using YDs_AwesomeDataGrid.Managers;
 
 namespace YDs_AwesomeDataGrid
 {
@@ -156,6 +157,11 @@ namespace YDs_AwesomeDataGrid
         private readonly CellVisualCache _cellCache = new CellVisualCache();
         private int _cachedFirstRow = -1;
         private int _cachedLastRow = -1;
+        #endregion
+
+        #region SortColumns
+        private string _sortedColumnName;
+        private ADGSortingDirection _sortingDirection = ADGSortingDirection.None;
         #endregion
 
         #region DragThumb
@@ -596,7 +602,7 @@ namespace YDs_AwesomeDataGrid
                             c.SortingDirection = ADGSortingDirection.None;
                 }
 
-                ADGSortingDirection currentSortingDir = column.SortingDirection;
+                ADGSortingDirection currentSortingDir = _sortingDirection;
                 if (currentSortingDir == ADGSortingDirection.None)
                     currentSortingDir = ADGSortingDirection.Ascending;
                 else if (currentSortingDir == ADGSortingDirection.Ascending)
@@ -606,7 +612,10 @@ namespace YDs_AwesomeDataGrid
                 else
                     currentSortingDir = ADGSortingDirection.None;
 
-                this.DataProvider.SortColumn(column.DataPropertyName, currentSortingDir);
+                _sortedColumnName = column.DataPropertyName;
+                _sortingDirection = currentSortingDir;
+
+                this.DataProvider.SortColumn(_sortedColumnName, _sortingDirection);
 
                 ViewportChanged?.Invoke();
                 _cellCache.InvalidateAll();
@@ -643,6 +652,7 @@ namespace YDs_AwesomeDataGrid
         {
             if (_layout.GridRect.Contains(e.Location) && TryGetCellByPoint(e.Location, out int row, out int col))
             {
+                if (col >= _columns.Length) return;
                 if (_columns[col].IsReadOnly) return;
 
                 RequestCellEditing(row, col);
@@ -1082,24 +1092,18 @@ namespace YDs_AwesomeDataGrid
                 g.FillRectangle(Brushes.LightGray, rect);
                 g.DrawRectangle(Pens.Black, rect);
 
-                var currentColSortingDir = _columns[col].SortingDirection;
-                string headerText;
-                if (currentColSortingDir == ADGSortingDirection.None)
-                {
-                    headerText = _columns[col].HeaderText;
-                }
-                else if (currentColSortingDir == ADGSortingDirection.Ascending)
-                {
-                    headerText = _columns[col].HeaderText + " ▲";
-                }
-                else if (currentColSortingDir == ADGSortingDirection.Descending)
-                {
-                    headerText = _columns[col].HeaderText + " ▼";
-                }
-                else
-                {
-                    headerText = _columns[col].HeaderText;
-                }
+                var column = _columns[col];
+
+                bool isSorted = column.DataPropertyName == _sortedColumnName;
+                var dir = isSorted ? _sortingDirection : ADGSortingDirection.None;
+
+                string headerText = column.HeaderText;
+
+                if (dir == ADGSortingDirection.Ascending)
+                    headerText += " ▲";
+                else if (dir == ADGSortingDirection.Descending)
+                    headerText += " ▼";
+
                 GraphicsHelper.DrawString(g, headerText, this.Font, Brushes.Black, rect);
             }
         }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace YDs_AwesomeDataGrid
+namespace YDs_AwesomeDataGrid.Managers
 {
     sealed class CellVisualCache
     {

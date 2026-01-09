@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace YDs_AwesomeDataGrid
+namespace YDs_AwesomeDataGrid.Managers
 {
     internal sealed class GridLayoutEngine
     {
