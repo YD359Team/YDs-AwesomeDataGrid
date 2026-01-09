@@ -17,7 +17,7 @@ namespace YDs_AwesomeDataGrid
 {
     public class AwesomeDataGrid : ExtendedControl
     {
-        #region Event
+        #region PrivateEvent
         private event Action ViewportChanged;
         #endregion
 
@@ -575,7 +575,7 @@ namespace YDs_AwesomeDataGrid
                 _isDraggingVertThumb = true;
                 _dragStartMousePos = e.Location;
                 _dragStartFirstVisibleRow = _viewPort.FirstVisibleRow;
-                Capture = true; // чтобы получать события мыши вне контрола
+                Capture = true; 
                 return;
             }
 
@@ -844,7 +844,7 @@ namespace YDs_AwesomeDataGrid
 
         private CellStyle ResolveCellStyle(int row, int col, object value)
         {
-            // простая логика, можно расширить
+            // TODO: change to logic
             return CellStyle.Default;
         }
         #endregion
@@ -1122,15 +1122,12 @@ namespace YDs_AwesomeDataGrid
                 bool selected = row == _selectedRow;
                 bool hot = row == _hotRow;
 
-                Color back =
-                    selected ? SystemColors.Highlight :
-                    hot ? Color.LightGray :
-                    SystemColors.Control;
+                Brush back =
+                    selected ? SystemBrushes.Highlight :
+                    hot ? Brushes.LightGray :
+                    SystemBrushes.Control;
 
-                using (var b = new SolidBrush(back))
-                {
-                    g.FillRectangle(b, r);
-                }
+                g.FillRectangle(back, r);
 
                 ControlPaint.DrawBorder(g, r, SystemColors.ControlDark, ButtonBorderStyle.Solid);
 
