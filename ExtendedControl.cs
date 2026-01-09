@@ -1,4 +1,8 @@
-﻿namespace YDs_AwesomeDataGrid
+﻿using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace YDs_AwesomeDataGrid
 {
     public class ExtendedControl : Control
     {
@@ -12,7 +16,7 @@
         {
             _doubleClickMaxTime = TimeSpan.FromMilliseconds(SystemInformation.DoubleClickTime);
 
-            _clickTimer = new();
+            _clickTimer = new Timer();
             if (!DesignMode)
             {
                 _clickTimer.Interval = SystemInformation.DoubleClickTime;
@@ -43,7 +47,12 @@
             _clickTimer.Start();
             _lastClick = DateTime.Now;
             _inDoubleClick = true;
+#if NET10_0_OR_GREATER
             _doubleClickArea = new Rectangle(e.Location - (SystemInformation.DoubleClickSize / 2),
+#else
+            Size doubleClickSize = SystemInformation.DoubleClickSize;
+            _doubleClickArea = new Rectangle(e.Location - (new Size(doubleClickSize.Width / 2, doubleClickSize.Height / 2)),
+#endif
                 SystemInformation.DoubleClickSize);
         }
 

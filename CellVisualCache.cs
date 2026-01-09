@@ -1,8 +1,12 @@
-﻿namespace YDs_AwesomeDataGrid
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace YDs_AwesomeDataGrid
 {
     sealed class CellVisualCache
     {
-        private readonly Dictionary<CellKey, CellVisual> _cache = new();
+        private readonly Dictionary<CellKey, CellVisual> _cache = new Dictionary<CellKey, CellVisual>();
 
         private int _firstRow = -1;
         private int _lastRow = -1;

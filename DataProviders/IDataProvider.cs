@@ -1,4 +1,6 @@
-﻿using YDs_AwesomeDataGrid.Enums;
+﻿using System;
+using System.Collections.Generic;
+using YDs_AwesomeDataGrid.Enums;
 
 public interface IDataProvider
 {

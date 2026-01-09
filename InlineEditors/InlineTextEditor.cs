@@ -1,4 +1,7 @@
-﻿using YDs_AwesomeDataGrid.InlineEditors;
+﻿using System;
+using System.Drawing;
+using System.Windows.Forms;
+using YDs_AwesomeDataGrid.InlineEditors;
 
 namespace YDs_AwesomeDataGrid
 {
@@ -23,7 +26,11 @@ namespace YDs_AwesomeDataGrid
             this.Editor.KeyDown += Editor_KeyDown;
         }
 
+#if NET10_0_OR_GREATER
         private void Editor_KeyDown(object? sender, KeyEventArgs e)
+#else
+        private void Editor_KeyDown(object sender, KeyEventArgs e)
+#endif
         {
             if (e.KeyCode == Keys.Escape)
             {
@@ -39,7 +46,11 @@ namespace YDs_AwesomeDataGrid
             OnEndEdit?.Invoke(this);
         }
 
+#if NET10_0_OR_GREATER
         private void Editor_LostFocus(object? sender, EventArgs e)
+#else
+        private void Editor_LostFocus(object sender, EventArgs e)
+#endif
         {
             HideEditor();
             OnLostFocus?.Invoke();
@@ -52,14 +63,18 @@ namespace YDs_AwesomeDataGrid
             ((TextBox)this.Editor).Clear();
         }
 
+#if NET10_0_OR_GREATER
         public void BeginEdit(Rectangle rect, object? cellValue, object[]? enumValues = null)
+#else
+        public void BeginEdit(Rectangle rect, object cellValue, object[] enumValues = null)
+#endif
         {
             Rectangle r = rect;
             r.Inflate(2, 2);
             this.Editor.Location = rect.Location;
             this.Editor.Size = rect.Size;
             this.Editor.Font = this.Grid.Font;
-            if (cellValue is not null)
+            if (cellValue != null)
             {
                 ((TextBox)this.Editor).Text = cellValue.ToString();
             }

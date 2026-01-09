@@ -1,4 +1,8 @@
-﻿namespace YDs_AwesomeDataGrid
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace YDs_AwesomeDataGrid
 {
     internal sealed class ColumnWidthManager
     {

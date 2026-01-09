@@ -1,4 +1,6 @@
-﻿public readonly struct ColumnDescription
+﻿using System;
+
+public readonly struct ColumnDescription
 {
     public string HeaderText { get; }
     public string DataPropertyName { get; }

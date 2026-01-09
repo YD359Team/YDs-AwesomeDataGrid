@@ -1,4 +1,8 @@
-﻿namespace YDs_AwesomeDataGrid
+﻿using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace YDs_AwesomeDataGrid
 {
     internal sealed class GridLayoutEngine
     {

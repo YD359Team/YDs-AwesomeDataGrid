@@ -7,6 +7,10 @@ using System.Windows.Forms.VisualStyles;
 using YDs_AwesomeDataGrid.Enums;
 using YDs_AwesomeDataGrid.Helpers;
 using YDs_AwesomeDataGrid.InlineEditors;
+using System.Drawing;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace YDs_AwesomeDataGrid
 {
@@ -75,29 +79,33 @@ namespace YDs_AwesomeDataGrid
         #endregion
 
         #region Data
-        private static readonly EmptyDataProvider EmptyProvider = new();
+        private static readonly EmptyDataProvider EmptyProvider = new EmptyDataProvider();
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public IDataProvider DataProvider
         {
-            get => field ?? EmptyProvider;
+            get => _dataProvider ?? EmptyProvider;
             set
             {
                 // clear enum cache
                 _enumValues.Clear();
-                if (value is not EmptyDataProvider) 
+                if (value.GetType() != typeof(EmptyDataProvider))
                 {
-                    field?.OnDataChanged -= AwesomeDataGrid_OnDataChanged;
-                    field = value ?? EmptyProvider;
+                    if (_dataProvider != null)
+                    {
+                        _dataProvider.OnDataChanged -= AwesomeDataGrid_OnDataChanged;
+                    }
+                    _dataProvider = value ?? EmptyProvider;
                     LoadData();
                     RecalcRects();
                     UpdateVisibleCells();
                     Invalidate();
-                    field?.OnDataChanged += AwesomeDataGrid_OnDataChanged;
+                    _dataProvider.OnDataChanged += AwesomeDataGrid_OnDataChanged;
                 }
             }
         }
-        #endregion
-        #endregion
+        private IDataProvider _dataProvider;
+#endregion
+#endregion
 
         #region PrivateProperties
         private int VisibleRowCount => _visibleRowCount;
@@ -117,13 +125,13 @@ namespace YDs_AwesomeDataGrid
         #endregion
 
         #region PrivateFields
-        private readonly GridLayoutEngine _layout = new();
-        private readonly ScrollManager _scrollManager = new();
+        private readonly GridLayoutEngine _layout = new GridLayoutEngine();
+        private readonly ScrollManager _scrollManager = new ScrollManager();
 
-        private readonly ViewPort _viewPort = new();
-        private readonly ScrollBarData _scrollBarData = new();
-        private readonly Selector _selector = new();
-        private readonly HoverSelector _hoverSelector = new();
+        private readonly ViewPort _viewPort = new ViewPort();
+        private readonly ScrollBarData _scrollBarData = new ScrollBarData();
+        private readonly Selector _selector = new Selector();
+        private readonly HoverSelector _hoverSelector = new HoverSelector();
         private GridInnerState _gridInnerState;
         private int _visibleRowCount;
         private bool _needVertScroll;
@@ -136,16 +144,16 @@ namespace YDs_AwesomeDataGrid
         private int _hotRow = -1;
         private int _selectedRow = -1;
 
-        private AwesomeDataGridColumn[] _columns = [];
+        private AwesomeDataGridColumn[] _columns = Array.Empty<AwesomeDataGridColumn>();
 
         #region InlineEditors
-        private readonly Dictionary<Type, IInlineEditor> _editors = new();
+        private readonly Dictionary<Type, IInlineEditor> _editors = new Dictionary<Type, IInlineEditor>();
         private IInlineEditor _currentEditor;
-        private readonly Dictionary<Type, object[]> _enumValues = new();
+        private readonly Dictionary<Type, object[]> _enumValues = new Dictionary<Type, object[]>();
         #endregion
 
         #region VisibleCellCache
-        private readonly CellVisualCache _cellCache = new();
+        private readonly CellVisualCache _cellCache = new CellVisualCache();
         private int _cachedFirstRow = -1;
         private int _cachedLastRow = -1;
         #endregion
@@ -163,9 +171,9 @@ namespace YDs_AwesomeDataGrid
         private readonly Brush _highlightTextBrush = SystemBrushes.HighlightText;
         private readonly Brush _highlightBackgroundBrush = new SolidBrush(Color.FromArgb(128, SystemColors.Highlight));
         private readonly Brush _maskBrush = new SolidBrush(Color.FromArgb(100, Color.DarkGray));
-        private readonly SolidBrush _thumbBrush = new(SystemColors.ControlDarkDark);
-        private readonly Pen _selectedBorderPen = new(SystemColors.HighlightText, 1f);
-        private readonly Pen _hoveredBorderPen = new(Color.DeepSkyBlue, 1f);
+        private readonly SolidBrush _thumbBrush = new SolidBrush(SystemColors.ControlDarkDark);
+        private readonly Pen _selectedBorderPen = new Pen(SystemColors.HighlightText, 1f);
+        private readonly Pen _hoveredBorderPen = new Pen(Color.DeepSkyBlue, 1f);
         #endregion
         #endregion
 
@@ -325,7 +333,7 @@ namespace YDs_AwesomeDataGrid
                 SmartInvalidate(GetCellRect(_selector.Row, _selector.Column));
             }
             // Space or Enter
-            if (e.KeyCode is Keys.Space or Keys.Enter)
+            if (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter)
             {
                 if (!_selector.IsVisible) return;
 
@@ -367,7 +375,11 @@ namespace YDs_AwesomeDataGrid
                 int col = _selector.Column;
                 if (_columns[col].IsReadOnly) return;
                 string clipboardText = Clipboard.GetText();
+#if NET10_0_OR_GREATER
                 object? value = clipboardText;
+#else
+                object value = clipboardText;
+#endif
                 try
                 {
                     if (_columns[col].DataType == typeof(int))
@@ -388,12 +400,12 @@ namespace YDs_AwesomeDataGrid
                     // ignore parse errors
                     return;
                 }
-                this.DataProvider.SetData(row, col, value!);
+                this.DataProvider.SetData(row, col, value);
                 InvalidateCellCache(row, col);
                 SmartInvalidate(GetCellRect(row, col));
             }
             // arrows
-            else if (e.KeyCode is Keys.Down or Keys.Up or Keys.Right or Keys.Left)
+            else if (e.KeyCode == Keys.Down || e.KeyCode == Keys.Up || e.KeyCode == Keys.Right || e.KeyCode == Keys.Left)
             {
                 int newRow = _selector.Row;
                 int newCol = _selector.Column;
@@ -409,7 +421,7 @@ namespace YDs_AwesomeDataGrid
                 MoveTo(newRow, newCol);
             }
             // pgup pgdn
-            else if (e.KeyCode is Keys.PageDown or Keys.PageUp)
+            else if (e.KeyCode == Keys.PageDown || e.KeyCode == Keys.PageUp)
             {
                 int newRow = _selector.Row;
                 int newCol = _selector.Column;
@@ -448,7 +460,7 @@ namespace YDs_AwesomeDataGrid
 
             if (_gridInnerState == GridInnerState.Editing) return;
 
-            Rectangle mouseRect = new(e.Location, new(1, 1));
+            Rectangle mouseRect = new Rectangle(e.Location, new Size(1, 1));
 
             if (_isDraggingVertThumb)
             {
@@ -461,7 +473,11 @@ namespace YDs_AwesomeDataGrid
                 int maxFirstRow = Math.Max(0, RowCount - VisibleRowCount);
 
                 _viewPort.FirstVisibleRow = _dragStartFirstVisibleRow + (int)(ratio * maxFirstRow);
+#if NET10_0_OR_GREATER
                 _viewPort.FirstVisibleRow = Math.Clamp(_viewPort.FirstVisibleRow, 0, maxFirstRow);
+#else
+                _viewPort.FirstVisibleRow = MathHelper.Clamp(_viewPort.FirstVisibleRow, 0, maxFirstRow);
+#endif
 
                 UpdateScrollThumbs();
                 UpdateVisibleCells();
@@ -480,7 +496,11 @@ namespace YDs_AwesomeDataGrid
                 int maxFirstCol = Math.Max(0, ColumnCount - _layout.VisibleColumnCount(_viewPort.FirstVisibleColumn));
 
                 _viewPort.FirstVisibleColumn = _dragStartFirstVisibleCol + (int)(ratio * maxFirstCol);
+#if NET10_0_OR_GREATER
                 _viewPort.FirstVisibleColumn = Math.Clamp(_viewPort.FirstVisibleColumn, 0, maxFirstCol);
+#else
+                _viewPort.FirstVisibleColumn = MathHelper.Clamp(_viewPort.FirstVisibleColumn, 0, maxFirstCol);
+#endif
 
                 UpdateScrollThumbs();
                 UpdateVisibleCells();
@@ -538,7 +558,7 @@ namespace YDs_AwesomeDataGrid
         {
             base.OnMouseDown(e);
 
-            Rectangle mouseRect = new(e.Location, new(1, 1));
+            Rectangle mouseRect = new Rectangle(e.Location, new Size(1, 1));
             bool isInGrid = _layout.GridRect.IntersectsWith(mouseRect);
 
             Rectangle vertThumb = _scrollBarData.VertThumb;
@@ -576,17 +596,17 @@ namespace YDs_AwesomeDataGrid
                             c.SortingDirection = ADGSortingDirection.None;
                 }
 
-                ADGSortingDirection sortDir = column.SortingDirection switch
-                {
-                    ADGSortingDirection.None => ADGSortingDirection.Ascending,
-                    ADGSortingDirection.Ascending => ADGSortingDirection.Descending,
-                    ADGSortingDirection.Descending => ADGSortingDirection.Ascending,
-                    _ => ADGSortingDirection.None,
-                };
+                ADGSortingDirection currentSortingDir = column.SortingDirection;
+                if (currentSortingDir == ADGSortingDirection.None)
+                    currentSortingDir = ADGSortingDirection.Ascending;
+                else if (currentSortingDir == ADGSortingDirection.Ascending)
+                    currentSortingDir = ADGSortingDirection.Descending;
+                else if (currentSortingDir == ADGSortingDirection.Descending)
+                    currentSortingDir = ADGSortingDirection.Ascending;
+                else
+                    currentSortingDir = ADGSortingDirection.None;
 
-                column.SortingDirection = sortDir;
-
-                this.DataProvider.SortColumn(column.DataPropertyName, sortDir);
+                this.DataProvider.SortColumn(column.DataPropertyName, currentSortingDir);
 
                 ViewportChanged?.Invoke();
                 _cellCache.InvalidateAll();
@@ -644,7 +664,7 @@ namespace YDs_AwesomeDataGrid
             // show editor with stored values for enum
             if (_columns[col].DataType.IsEnum)
             {
-                this.EditingCellAddress = new(row, col);
+                this.EditingCellAddress = new CellKey(row, col);
                 var enumVals = _enumValues[_columns[col].DataType];
                 _currentEditor = _editors[typeof(Enum)];
                 _currentEditor.BeginEdit(GetCellRect(row, col),
@@ -655,7 +675,7 @@ namespace YDs_AwesomeDataGrid
             else if (_editors.TryGetValue(_columns[col].DataType, out var editor))
             {
                 _currentEditor = editor;
-                this.EditingCellAddress = new(row, col);
+                this.EditingCellAddress = new CellKey(row, col);
                 editor.BeginEdit(GetCellRect(row, col), GetData(this.EditingCellAddress.Row, this.EditingCellAddress.Column));
             }
 
@@ -680,7 +700,7 @@ namespace YDs_AwesomeDataGrid
             Invalidate();
         }
 
-        #endregion
+#endregion
 
         #region PrivateMethods
         private void LoadData()
@@ -894,30 +914,28 @@ namespace YDs_AwesomeDataGrid
         private string GetCellPres(object value, Type dataType)
         {
             if (value == null) return string.Empty;
-            return dataType switch
-            {
-                Type t when t == typeof(float) => ((float)value).ToString("F2"),
-                Type t when t == typeof(double) => ((double)value).ToString("F2"),
-                Type t when t == typeof(decimal) => ((decimal)value).ToString("F2"),
-                Type t when t == typeof(DateTime) => ((DateTime)value).ToShortDateString(),
-                _ => value?.ToString() ?? string.Empty
-            };
+            if (dataType == typeof(float)) return ((float)value).ToString("F2");
+            if (dataType == typeof(double)) return ((double)value).ToString("F2");
+            if (dataType == typeof(decimal)) return ((decimal)value).ToString("F2");
+            if (dataType == typeof(DateTime)) return ((DateTime)value).ToShortDateString();
+            return value?.ToString() ?? string.Empty;
         }
 
+#if NET10_0_OR_GREATER
         private object? GetDefaultValueForType(Type type)
+#else
+        private object GetDefaultValueForType(Type type)
+#endif
         {
-            return type switch
-            {
-                Type t when t == typeof(string) => string.Empty,
-                Type t when t == typeof(int) => 0,
-                Type t when t == typeof(float) => 0f,
-                Type t when t == typeof(double) => 0.0,
-                Type t when t == typeof(decimal) => 0.0m,
-                Type t when t == typeof(bool) => false,
-                Type t when t == typeof(DateTime) => default(DateTime),
-                Type t when t.IsEnum => _enumValues[t].First(),
-                _ => null,
-            };
+            if (type == typeof(string)) return string.Empty;
+            if (type == typeof(int)) return 0;
+            if (type == typeof(float)) return 0f;
+            if (type == typeof(double)) return 0.0;
+            if (type == typeof(decimal)) return 0.0m;
+            if (type == typeof(bool)) return false;
+            if (type == typeof(DateTime)) return default(DateTime);
+            if (type.IsEnum) return _enumValues[type].First();
+            return null;
         }
 
         private void ChangeGridState(GridInnerState newState)
@@ -937,7 +955,7 @@ namespace YDs_AwesomeDataGrid
             _currentEditor.Close();
         }
 
-        #endregion
+#endregion
 
         #region Paint
         private void DrawBorder(Graphics g)
@@ -1041,7 +1059,7 @@ namespace YDs_AwesomeDataGrid
                            : (isSelected ? CheckBoxState.UncheckedHot : CheckBoxState.UncheckedNormal);
 
                         CheckBoxRenderer.DrawCheckBox(g,
-                            new(cellRect.X + (cellRect.Width - 14) / 2, cellRect.Y + (cellRect.Height - 14) / 2),
+                            new Point(cellRect.X + (cellRect.Width - 14) / 2, cellRect.Y + (cellRect.Height - 14) / 2),
                             state);
                     }
                     else
@@ -1059,18 +1077,29 @@ namespace YDs_AwesomeDataGrid
             for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
             {
                 int x = _layout.GridRect.X + (col - _viewPort.FirstVisibleColumn) * _layout.ColumnWidth;
-                Rectangle rect = new(x, 0, _layout.ColumnWidth, _layout.RowHeight);
+                Rectangle rect = new Rectangle(x, 0, _layout.ColumnWidth, _layout.RowHeight);
 
                 g.FillRectangle(Brushes.LightGray, rect);
                 g.DrawRectangle(Pens.Black, rect);
 
-                string headerText = _columns[col].SortingDirection switch
+                var currentColSortingDir = _columns[col].SortingDirection;
+                string headerText;
+                if (currentColSortingDir == ADGSortingDirection.None)
                 {
-                    ADGSortingDirection.None => _columns[col].HeaderText,
-                    ADGSortingDirection.Ascending => _columns[col].HeaderText + " ▲",
-                    ADGSortingDirection.Descending => _columns[col].HeaderText + " ▼",
-                    _ => _columns[col].HeaderText,
-                };
+                    headerText = _columns[col].HeaderText;
+                }
+                else if (currentColSortingDir == ADGSortingDirection.Ascending)
+                {
+                    headerText = _columns[col].HeaderText + " ▲";
+                }
+                else if (currentColSortingDir == ADGSortingDirection.Descending)
+                {
+                    headerText = _columns[col].HeaderText + " ▼";
+                }
+                else
+                {
+                    headerText = _columns[col].HeaderText;
+                }
                 GraphicsHelper.DrawString(g, headerText, this.Font, Brushes.Black, rect);
             }
         }
@@ -1094,8 +1123,10 @@ namespace YDs_AwesomeDataGrid
                     hot ? Color.LightGray :
                     SystemColors.Control;
 
-                using var b = new SolidBrush(back);
-                g.FillRectangle(b, r);
+                using (var b = new SolidBrush(back))
+                {
+                    g.FillRectangle(b, r);
+                }
 
                 ControlPaint.DrawBorder(g, r, SystemColors.ControlDark, ButtonBorderStyle.Solid);
 
@@ -1116,7 +1147,11 @@ namespace YDs_AwesomeDataGrid
             Rectangle thumb = _scrollBarData.VertThumb;
 
             int y = mouseY - _scrollBarData.DragOffset;
+#if NET10_0_OR_GREATER
             y = Math.Clamp(y, track.Top, track.Bottom - thumb.Height);
+#else
+            y = MathHelper.Clamp(y, track.Top, track.Bottom - thumb.Height);
+#endif
 
             int scrollRange = track.Height - thumb.Height;
             if (scrollRange <= 0)
@@ -1134,8 +1169,11 @@ namespace YDs_AwesomeDataGrid
             Rectangle thumb = _scrollBarData.HorThumb;
 
             int x = mouseX - _scrollBarData.DragOffset;
+#if NET10_0_OR_GREATER
             x = Math.Clamp(x, track.Left, track.Right - thumb.Width);
-
+#else
+            x = MathHelper.Clamp(x, track.Left, track.Right - thumb.Width);
+#endif
             int scrollRange = track.Width - thumb.Width;
             if (scrollRange <= 0)
                 return;
@@ -1146,7 +1184,7 @@ namespace YDs_AwesomeDataGrid
             _viewPort.FirstVisibleColumn = (int)(t * maxFirstCol);
         }
 
-        #endregion
+#endregion
 
         #region EventHandlers
         private void AwesomeDataGrid_OnDataChanged()

@@ -1,4 +1,6 @@
 ﻿
+using System.Drawing;
+
 internal class ScrollBarData
 {
     public int OffsetX;

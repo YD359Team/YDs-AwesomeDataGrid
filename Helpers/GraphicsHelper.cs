@@ -1,13 +1,15 @@
-﻿namespace YDs_AwesomeDataGrid.Helpers
+﻿using System.Drawing;
+
+namespace YDs_AwesomeDataGrid.Helpers
 {
     internal static class GraphicsHelper
     {
-        private static readonly StringFormat DefaultStringFormat = new()
+        private static readonly StringFormat DefaultStringFormat = new StringFormat()
         {
             Alignment = StringAlignment.Center,
             LineAlignment = StringAlignment.Center,
         };
-        private static readonly StringFormat DebugStringFormat = new()
+        private static readonly StringFormat DebugStringFormat = new StringFormat()
         {
             Alignment = StringAlignment.Near,
             LineAlignment = StringAlignment.Near,
