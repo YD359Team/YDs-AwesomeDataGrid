@@ -10,17 +10,17 @@ Simple and faster DataGridView without dependencies
 - ✅ Virtualized by default
 - ✅ Key inputs (arrows, ESC, space, enter, del)
 - ✅ Fully custom scrollbars with dragging
+- ✅ Latest .NET (10) and .NET Framework support (4.8.1)
 - ✅ Always free
 
 ## What's under developing now (TODOs)
 
-1. .NET Framework support (~4.8)
-2. Resized columns
-3. Custom format columns
-4. Image support
-5. Multiselect
-6. Easy CSV load and reflected-driven DataSource
-7. Export data from file
+1. Resized columns
+2. Custom format columns
+3. Image support
+4. Multiselect
+5. Easy CSV load and reflected-driven DataSource
+6. Export data from file
 
 ## GetStarted
 
