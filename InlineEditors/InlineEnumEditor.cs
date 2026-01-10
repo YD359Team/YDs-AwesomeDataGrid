@@ -15,12 +15,13 @@ namespace YDs_AwesomeDataGrid
         public Control Editor { get; private set; }
         public object Value { get; private set; }
 
-        public InlineEnumEditor()
+        public InlineEnumEditor(object[] values)
         {
             this.Editor = new ComboBox()
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
             };
+            ((ComboBox)this.Editor).Items.AddRange(values);
             this.Editor.Leave += Editor_LostFocus;
             this.Editor.KeyDown += Editor_KeyDown;
         }
@@ -63,9 +64,9 @@ namespace YDs_AwesomeDataGrid
         }
 
 #if NET10_0_OR_GREATER
-        public void BeginEdit(Rectangle rect, object? cellValue, object[]? enumValues = null)
+        public void BeginEdit(Rectangle rect, object? cellValue)
 #else
-        public void BeginEdit(Rectangle rect, object cellValue, object[] enumValues = null)
+        public void BeginEdit(Rectangle rect, object cellValue)
 #endif
         {
             Rectangle r = rect;
@@ -73,7 +74,6 @@ namespace YDs_AwesomeDataGrid
             this.Editor.Location = rect.Location;
             this.Editor.Size = rect.Size;
             this.Editor.Font = this.Grid.Font;
-            ((ComboBox)this.Editor).Items.AddRange(enumValues);
             if (cellValue != null)
             {
                 ((ComboBox)this.Editor).SelectedItem = cellValue;

@@ -89,7 +89,6 @@ namespace YDs_AwesomeDataGrid
             set
             {
                 // clear enum cache
-                _enumValues.Clear();
                 if (value.GetType() != typeof(EmptyDataProvider))
                 {
                     if (_dataProvider != null)
@@ -152,7 +151,6 @@ namespace YDs_AwesomeDataGrid
         #region InlineEditors
         private readonly Dictionary<string, IInlineEditor> _editors = new Dictionary<string, IInlineEditor>();
         private IInlineEditor _currentEditor;
-        private readonly Dictionary<Type, object[]> _enumValues = new Dictionary<Type, object[]>();
         #endregion
 
         #region VisibleCellCache
@@ -332,7 +330,7 @@ namespace YDs_AwesomeDataGrid
 
                 int col = _selector.Column;
                 if (col < 0 || col >= ColumnCount) return;
-                if (_columns[col].CanEdit) return;
+                if (!_columns[col].CanEdit) return;
 
                 int row = _selector.Row;
                 RequestCellEditing(row, col);
@@ -344,7 +342,7 @@ namespace YDs_AwesomeDataGrid
 
                 int col = _selector.Column;
                 if (col < 0 || col >= ColumnCount) return;
-                if (_columns[col].CanEdit) return;
+                if (!_columns[col].CanEdit) return;
 
                 int row = _selector.Row;
                 this.DataProvider.SetData(row, col, GetDefaultValueForColumn(_columns[col]));
@@ -366,7 +364,7 @@ namespace YDs_AwesomeDataGrid
                 if (!_selector.IsVisible) return;
                 int row = _selector.Row;
                 int col = _selector.Column;
-                if (_columns[col].CanEdit) return;
+                if (!_columns[col].CanEdit) return;
                 string clipboardText = Clipboard.GetText();
 #if NET10_0_OR_GREATER
                 object? value = clipboardText;
@@ -530,8 +528,11 @@ namespace YDs_AwesomeDataGrid
 
             if (TryGetColumnHeaderByPoint(e.Location, out int col))
             {
+                int old = _hoveredHeaderCol;
                 _hoveredHeaderCol = col;
-                Invalidate();
+
+                if (old >= 0) Invalidate(GetHeaderRect(old));
+                Invalidate(GetHeaderRect(col));
             }
 
             if (_layout.GridRect.IntersectsWith(mouseRect) && TryGetCellByPoint(e.Location, out int row, out col))
@@ -641,7 +642,7 @@ namespace YDs_AwesomeDataGrid
             if (_layout.GridRect.Contains(e.Location) && TryGetCellByPoint(e.Location, out int row, out int col))
             {
                 if (col >= _columns.Length) return;
-                if (_columns[col].CanEdit) return;
+                if (!_columns[col].CanEdit) return;
 
                 RequestCellEditing(row, col);
             }
@@ -698,16 +699,6 @@ namespace YDs_AwesomeDataGrid
             // load columns
             _columns = this.DataProvider.GetColumnsDescription().ToArray();
 
-            // get enum values
-            foreach (var colDesc in _columns)
-            {
-                if (colDesc.DataType.IsEnum && !_enumValues.ContainsKey(colDesc.DataType))
-                {
-                    var values = Enum.GetValues(colDesc.DataType).Cast<object>().ToArray();
-                    _enumValues[colDesc.DataType] = values;
-                }
-            }
-
             this.ColumnCount = _columns.Length;
             this.RowCount = this.DataProvider.RowCount;
         }
@@ -739,6 +730,23 @@ namespace YDs_AwesomeDataGrid
                 _viewPort.FirstVisibleColumn
             );
         }
+
+        private Rectangle GetHeaderRect(int col)
+        {
+            if (col < _viewPort.FirstVisibleColumn || col > LastVisibleColumn)
+                return Rectangle.Empty;
+
+            int x = _layout.GridRect.X
+                  + (col - _viewPort.FirstVisibleColumn) * _layout.ColumnWidth;
+
+            return new Rectangle(
+                x,
+                0,
+                _layout.ColumnWidth,
+                _layout.RowHeight
+            );
+        }
+
 
         private bool TryGetCellByPoint(Point p, out int row, out int col)
         {
@@ -911,28 +919,7 @@ namespace YDs_AwesomeDataGrid
         private object GetDefaultValueForColumn(IGridColumn column)
 #endif
         {
-            if (column is TextColumn) return string.Empty;
-            if (column is IntColumn) return 0;
-            if (column is CheckBoxColumn) return false;
-            if (column is DateTimeColumn) return default(DateTime);
-            return GetDefaultValueForType(column.DataType);
-        }
-
-#if NET10_0_OR_GREATER
-        private object? GetDefaultValueForType(Type type)
-#else
-        private object GetDefaultValueForType(Type type)
-#endif
-        {
-            if (type == typeof(string)) return string.Empty;
-            if (type == typeof(int)) return 0;
-            if (type == typeof(float)) return 0f;
-            if (type == typeof(double)) return 0.0;
-            if (type == typeof(decimal)) return 0.0m;
-            if (type == typeof(bool)) return false;
-            if (type == typeof(DateTime)) return default(DateTime);
-            if (type.IsEnum) return _enumValues[type].First();
-            return null;
+            return column.GetDefaultValue();
         }
 
         private void ChangeGridState(GridInnerState newState)

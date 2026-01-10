@@ -22,7 +22,7 @@ namespace YDs_AwesomeDataGrid.Columns
         public override IInlineEditor CreateEditor()
 #endif
         {
-            return new InlineEnumEditor();
+            return new InlineEnumEditor(_enumValues.Cast<object>().ToArray());
         }
 
         public override void DrawCell(Graphics g, CellContext ctx)

@@ -15,9 +15,9 @@ namespace YDs_AwesomeDataGrid.InlineEditors
         object Value { get; }
 
 #if NET10_0_OR_GREATER
-        void BeginEdit(Rectangle rect, object? cellValue, object[]? enumValues = null);
+        void BeginEdit(Rectangle rect, object? cellValue);
 #else
-        void BeginEdit(Rectangle rect, object cellValue, object[] enumValues = null);
+        void BeginEdit(Rectangle rect, object cellValue);
 #endif
         void Close();
     }

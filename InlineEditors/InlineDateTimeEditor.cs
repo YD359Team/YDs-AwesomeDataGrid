@@ -65,9 +65,9 @@ namespace YDs_AwesomeDataGrid
         }
 
 #if NET10_0_OR_GREATER
-        public void BeginEdit(Rectangle rect, object? cellValue, object[]? enumValues = null)
+        public void BeginEdit(Rectangle rect, object? cellValue)
 #else
-        public void BeginEdit(Rectangle rect, object cellValue, object[] enumValues = null)
+        public void BeginEdit(Rectangle rect, object cellValue)
 #endif
         {
             Rectangle r = rect;
