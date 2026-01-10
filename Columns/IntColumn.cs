@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Windows.Forms;
 using YDs_AwesomeDataGrid.Helpers;
 using YDs_AwesomeDataGrid.InlineEditors;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace YDs_AwesomeDataGrid.Columns
 {

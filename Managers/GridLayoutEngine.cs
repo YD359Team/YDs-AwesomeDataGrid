@@ -115,6 +115,21 @@ namespace YDs_AwesomeDataGrid.Managers
             _columnWidths = new ColumnWidthManager(columnCount, DEFAULT_COLUMN_WIDTH);
         }
 
+        public Rectangle GetHeaderRect(int col, int firstVisibleColumn)
+        {
+            if (col < firstVisibleColumn || col >= firstVisibleColumn + VisibleColumnCount(firstVisibleColumn))
+                return Rectangle.Empty;
+
+            int x = GridRect.X + (col - firstVisibleColumn) * ColumnWidth;
+
+            return new Rectangle(
+                x,
+                0,
+                ColumnWidth,
+                RowHeight
+            );
+        }
+
         public Rectangle GetCellRect(
                 int row,
                 int col,
