@@ -8,26 +8,35 @@ namespace YDs_AwesomeDataGrid.Columns
         public int ColumnIndex { get; }
         public Rectangle Bounds { get; }
 
+        public string Text { get; }
+
         public bool IsHovered { get; }
         public bool IsPressed { get; }
 
-        public bool AllowSort { get; }
-        public ADGSortingDirection SortingDirection { get; }
+        public bool IsSorted { get; }
+        public ADGSortingDirection SortDirection { get; }
+
+        public CellStyle Style { get; }
 
         public HeaderContext(
             int columnIndex,
             Rectangle bounds,
+            string text,
             bool isHovered,
             bool isPressed,
-            bool allowSort,
-            ADGSortingDirection sortingDirection)
+            bool isSorted,
+            ADGSortingDirection sortDirection,
+            CellStyle style)
         {
             ColumnIndex = columnIndex;
             Bounds = bounds;
+            Text = text;
             IsHovered = isHovered;
             IsPressed = isPressed;
-            AllowSort = allowSort;
-            SortingDirection = sortingDirection;
+            IsSorted = isSorted;
+            SortDirection = sortDirection;
+            Style = style;
         }
     }
+
 }

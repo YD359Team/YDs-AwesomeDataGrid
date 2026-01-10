@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
 using YDs_AwesomeDataGrid.Columns;
+using YDs_AwesomeDataGrid.Enums;
 
 namespace YDs_AwesomeDataGrid.Helpers
 {
@@ -13,29 +14,10 @@ namespace YDs_AwesomeDataGrid.Helpers
             Alignment = StringAlignment.Center,
             LineAlignment = StringAlignment.Center,
         };
-        private static readonly StringFormat DebugStringFormat = new StringFormat()
-        {
-            Alignment = StringAlignment.Near,
-            LineAlignment = StringAlignment.Near,
-        };
 
         public static void DrawString(Graphics g, string text, Font font, Brush brush, RectangleF layoutRectangle)
         {
             g.DrawString(text, font, brush, layoutRectangle, DefaultStringFormat);
-        }
-
-        public static void DrawDebug(Graphics g, object obj, Font font, Brush brush, RectangleF layoutRectangle)
-        {
-            if (layoutRectangle == Rectangle.Empty) return;
-
-            if (obj is Rectangle rect)
-            {
-                g.DrawString($"[{rect.X},{rect.Y},{rect.Width},{rect.Height}]", font, brush, layoutRectangle, DebugStringFormat);
-            }
-            else
-            {
-                g.DrawString(obj.ToString(), font, brush, layoutRectangle, DebugStringFormat);
-            }
         }
 
         public static void DrawCell(Graphics g, CellContext ctx)
@@ -54,7 +36,7 @@ namespace YDs_AwesomeDataGrid.Helpers
             }
 
             string text = ctx.Value?.ToString() ?? string.Empty;
-            g.DrawString(text, ctx.Style.Font, Brushes.Black, ctx.Bounds);
+            g.DrawString(text, ctx.Style.Font, Brushes.Black, ctx.Bounds, DefaultStringFormat);
             
             g.DrawRectangle(Pens.DarkGray, ctx.Bounds);
         }
@@ -74,14 +56,43 @@ namespace YDs_AwesomeDataGrid.Helpers
                 g.FillRectangle(SystemBrushes.ControlLightLight, ctx.Bounds);
             }
 
-            if (Convert.ToBoolean(ctx.Value))
+            Rectangle bounds = ctx.Bounds;
+            bounds.Inflate(-6, -3);
+            bool value = ctx.Value is bool b && b;
+            if (value)
             { 
-                CheckBoxRenderer.DrawCheckBox(g, ctx.Bounds.Location, CheckBoxState.CheckedNormal);
+                CheckBoxRenderer.DrawCheckBox(g, bounds.Location, ctx.IsHovered ? CheckBoxState.CheckedHot : CheckBoxState.CheckedNormal);
             }   
             else
             {
-                CheckBoxRenderer.DrawCheckBox(g, ctx.Bounds.Location, CheckBoxState.UncheckedNormal);
+                CheckBoxRenderer.DrawCheckBox(g, bounds.Location, ctx.IsHovered ? CheckBoxState.UncheckedHot : CheckBoxState.UncheckedNormal);
             }
+
+            g.DrawRectangle(Pens.DarkGray, ctx.Bounds);
+        }
+
+        public static void DrawHeader(Graphics g, HeaderContext ctx)
+        {
+            // background
+            if (ctx.IsPressed)
+                g.FillRectangle(Brushes.DarkGray, ctx.Bounds);
+            else if (ctx.IsHovered)
+                g.FillRectangle(Brushes.LightGray, ctx.Bounds);
+            else
+                g.FillRectangle(Brushes.Gainsboro, ctx.Bounds);
+
+            // text + sort icon
+            string text = ctx.Text;
+            if (ctx.IsSorted)
+                text += ctx.SortDirection == ADGSortingDirection.Ascending ? " ▲" : " ▼";
+
+            GraphicsHelper.DrawString(
+                g,
+                text,
+                ctx.Style.Font,
+                Brushes.Black,
+                ctx.Bounds
+            );
 
             g.DrawRectangle(Pens.DarkGray, ctx.Bounds);
         }

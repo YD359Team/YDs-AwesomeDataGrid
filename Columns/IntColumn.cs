@@ -30,7 +30,7 @@ namespace YDs_AwesomeDataGrid.Columns
 
         public override void DrawHeader(Graphics g, HeaderContext ctx)
         {
-            throw new NotImplementedException();
+            GraphicsHelper.DrawHeader(g, ctx);
         }
 
         public override string Format(int value)

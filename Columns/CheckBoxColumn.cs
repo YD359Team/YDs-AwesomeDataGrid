@@ -18,7 +18,7 @@ namespace YDs_AwesomeDataGrid.Columns
         public override IInlineEditor CreateEditor()
 #endif
         {
-            return null;
+            throw new NotImplementedException(nameof(CheckBoxColumn) + " don't supports inline editor");
         }
 
         public override void DrawCell(Graphics g, CellContext ctx)
@@ -28,7 +28,7 @@ namespace YDs_AwesomeDataGrid.Columns
 
         public override void DrawHeader(Graphics g, HeaderContext ctx)
         {
-            throw new NotImplementedException();
+            GraphicsHelper.DrawHeader(g, ctx);
         }
 
         public override string Format(bool value)

@@ -161,6 +161,8 @@ namespace YDs_AwesomeDataGrid
         private int _cachedLastRow = -1;
         #endregion
 
+        private int _hoveredHeaderCol = -1;
+        private int _pressedHeaderCol = -1;
         #region SortColumns
         private string _sortedColumnName;
         private ADGSortingDirection _sortingDirection = ADGSortingDirection.None;
@@ -187,6 +189,10 @@ namespace YDs_AwesomeDataGrid
         private readonly CellStyle _defaultCellStyle = new CellStyle()
         {
              Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point)
+        };
+        private readonly CellStyle _defaultColHeaderStyle = new CellStyle()
+        {
+            Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point)
         };
         #endregion
 
@@ -522,7 +528,13 @@ namespace YDs_AwesomeDataGrid
             int lastHoveredRow = _hoverSelector.Row;
             int lastHoveredCol = _hoverSelector.Column;
 
-            if (_layout.GridRect.IntersectsWith(mouseRect) && TryGetCellByPoint(e.Location, out int row, out int col))
+            if (TryGetColumnHeaderByPoint(e.Location, out int col))
+            {
+                _hoveredHeaderCol = col;
+                Invalidate();
+            }
+
+            if (_layout.GridRect.IntersectsWith(mouseRect) && TryGetCellByPoint(e.Location, out int row, out col))
             {
                 if (_hoverState == HoverStates.Cell && lastHoveredCol == col && lastHoveredRow == row) return;
 
@@ -575,6 +587,8 @@ namespace YDs_AwesomeDataGrid
                 IGridColumn column = _columns[headerCol];
 
                 if (!column.CanSort) return;
+
+                _hoveredHeaderCol = headerCol;
 
                 ADGSortingDirection currentSortingDir = _sortingDirection;
                 if (currentSortingDir == ADGSortingDirection.None)
@@ -1029,22 +1043,20 @@ namespace YDs_AwesomeDataGrid
                 int x = _layout.GridRect.X + (col - _viewPort.FirstVisibleColumn) * _layout.ColumnWidth;
                 Rectangle rect = new Rectangle(x, 0, _layout.ColumnWidth, _layout.RowHeight);
 
-                g.FillRectangle(Brushes.LightGray, rect);
-                g.DrawRectangle(Pens.Black, rect);
+                IGridColumn column = _columns[col];
 
-                var column = _columns[col];
+                HeaderContext ctx = new HeaderContext(
+                    col,
+                    rect,
+                    column.HeaderText,
+                    col == _hoveredHeaderCol,
+                    col == _pressedHeaderCol,
+                    _sortedColumnName == column.Name,
+                    _sortedColumnName == column.Name ? _sortingDirection : ADGSortingDirection.None,
+                    _defaultColHeaderStyle
+                );
 
-                bool isSorted = column.Name == _sortedColumnName;
-                var dir = isSorted ? _sortingDirection : ADGSortingDirection.None;
-
-                string headerText = column.HeaderText;
-
-                if (dir == ADGSortingDirection.Ascending)
-                    headerText += " ▲";
-                else if (dir == ADGSortingDirection.Descending)
-                    headerText += " ▼";
-
-                GraphicsHelper.DrawString(g, headerText, this.Font, Brushes.Black, rect);
+                GraphicsHelper.DrawHeader(g, ctx);
             }
         }
 
