@@ -6,22 +6,20 @@ Simple and faster DataGridView without dependencies
 
 - ✅ Just Control-based class with GDI+ rendering, no magic
 - ✅ Small sized control without overhead
+- ✅ Custom typed and format columns
 - ✅ Inline editors (for string, DateTime, Enum, Int32, Float32) via small cached controls + checkboxes for Boolean
 - ✅ Virtualized by default
-- ✅ Key inputs (arrows, ESC, space, enter, del)
+- ✅ Key inputs (arrows, ESC, Space, Enter, Del, PgDown, PgUp)
 - ✅ Fully custom scrollbars with dragging
 - ✅ Latest .NET (10) and .NET Framework support (4.8.1)
 - ✅ Always free
 
 ## What's under developing now (TODOs)
 
-1. Resized columns
-2. Custom format columns
-3. Image support
-4. Multiselect
-5. Easy CSV load and reflected-driven DataSource
-6. Export data to file
-7. [Maybe] Render control to Bitmap like Avalonia
+1. Multiselect
+2. Easy CSV load and reflected-driven DataSource
+3. Export data to file
+4. [Maybe] Render control to Bitmap like Avalonia
 
 ## GetStarted
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using YDs_AwesomeDataGrid.Columns;
 using YDs_AwesomeDataGrid.Enums;
 
 public class EmptyDataProvider : IDataProvider
@@ -16,9 +17,9 @@ public class EmptyDataProvider : IDataProvider
         // Do nothing
     }
 
-    public IEnumerable<ColumnDescription> GetColumnsDescription()
+    public IEnumerable<IGridColumn> GetColumnsDescription()
     {
-        return Array.Empty<ColumnDescription>();
+        return Array.Empty<IGridColumn>();
     }
 
     public int RowCount => 0;

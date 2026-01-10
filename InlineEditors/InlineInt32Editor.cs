@@ -10,14 +10,13 @@ namespace YDs_AwesomeDataGrid
         public event Action OnLostFocus;
         public event Action<IInlineEditor> OnEndEdit;
 
-        public Control Grid { get; }
+        public Control Grid { get; set; }
         public Type ColumnType => typeof(int);
         public Control Editor { get; private set; }
         public object Value { get; private set; }
 
-        public InlineInt32Editor(Control grid)
+        public InlineInt32Editor()
         {
-            this.Grid = grid;
             this.Editor = new NumericUpDown()
             {
                 BorderStyle = BorderStyle.FixedSingle,

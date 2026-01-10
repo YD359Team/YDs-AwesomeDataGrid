@@ -12,14 +12,13 @@ namespace YDs_AwesomeDataGrid
 
         private static readonly DateTime FallbackValue = new DateTime(2000, 1, 1);
 
-        public Control Grid { get; }
+        public Control Grid { get; set; }
         public Type ColumnType => typeof(string);
         public Control Editor { get; private set; }
         public object Value { get; private set; }
 
-        public InlineDateTimeEditor(Control grid)
+        public InlineDateTimeEditor()
         {
-            this.Grid = grid;
             this.Editor = new DateTimePicker()
             {
                 Value = FallbackValue

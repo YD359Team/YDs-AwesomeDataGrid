@@ -1,4 +1,8 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
+using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
+using YDs_AwesomeDataGrid.Columns;
 
 namespace YDs_AwesomeDataGrid.Helpers
 {
@@ -32,6 +36,54 @@ namespace YDs_AwesomeDataGrid.Helpers
             {
                 g.DrawString(obj.ToString(), font, brush, layoutRectangle, DebugStringFormat);
             }
+        }
+
+        public static void DrawCell(Graphics g, CellContext ctx)
+        {
+            if (ctx.IsSelected)
+            {
+                g.FillRectangle(Brushes.LightSkyBlue, ctx.Bounds);
+            }
+            else if (ctx.IsHovered)
+            {
+                g.FillRectangle(Brushes.LightCyan, ctx.Bounds);
+            }
+            else
+            {
+                g.FillRectangle(SystemBrushes.ControlLightLight, ctx.Bounds);
+            }
+
+            string text = ctx.Value?.ToString() ?? string.Empty;
+            g.DrawString(text, ctx.Style.Font, Brushes.Black, ctx.Bounds);
+            
+            g.DrawRectangle(Pens.DarkGray, ctx.Bounds);
+        }
+
+        public static void DrawCheckBoxCell(Graphics g, CellContext ctx)
+        {
+            if (ctx.IsSelected)
+            {
+                g.FillRectangle(Brushes.LightSkyBlue, ctx.Bounds);
+            }
+            else if (ctx.IsHovered)
+            {
+                g.FillRectangle(Brushes.LightCyan, ctx.Bounds);
+            }
+            else
+            {
+                g.FillRectangle(SystemBrushes.ControlLightLight, ctx.Bounds);
+            }
+
+            if (Convert.ToBoolean(ctx.Value))
+            { 
+                CheckBoxRenderer.DrawCheckBox(g, ctx.Bounds.Location, CheckBoxState.CheckedNormal);
+            }   
+            else
+            {
+                CheckBoxRenderer.DrawCheckBox(g, ctx.Bounds.Location, CheckBoxState.UncheckedNormal);
+            }
+
+            g.DrawRectangle(Pens.DarkGray, ctx.Bounds);
         }
     }
 }

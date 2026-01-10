@@ -1,0 +1,39 @@
+﻿using System;
+using System.Drawing;
+using YDs_AwesomeDataGrid.Helpers;
+using YDs_AwesomeDataGrid.InlineEditors;
+
+namespace YDs_AwesomeDataGrid.Columns
+{
+    public class CheckBoxColumn : GridColumn<bool>
+    {
+        public CheckBoxColumn(string name, string headerText, bool canEdit, bool canSort) : base(name, headerText, canEdit, canSort)
+        {
+
+        }
+
+#if NET10_0_OR_GREATER
+        public override IInlineEditor? CreateEditor()
+#else
+        public override IInlineEditor CreateEditor()
+#endif
+        {
+            return null;
+        }
+
+        public override void DrawCell(Graphics g, CellContext ctx)
+        {
+            GraphicsHelper.DrawCheckBoxCell(g, ctx);
+        }
+
+        public override void DrawHeader(Graphics g, HeaderContext ctx)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string Format(bool value)
+            => value.ToString();
+
+        public override object GetDefaultValue() => false;
+    }
+}

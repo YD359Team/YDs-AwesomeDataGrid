@@ -9,7 +9,7 @@ namespace YDs_AwesomeDataGrid.InlineEditors
         event Action OnLostFocus;
         event Action<IInlineEditor> OnEndEdit;
 
-        Control Grid { get; }
+        Control Grid { get; set; }
         Type ColumnType { get; }
         Control Editor { get; }
         object Value { get; }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using YDs_AwesomeDataGrid.Columns;
 using YDs_AwesomeDataGrid.Enums;
 
 public interface IDataProvider
@@ -12,7 +13,7 @@ public interface IDataProvider
 
     void SetData(int row, int column, object value);
 
-    IEnumerable<ColumnDescription> GetColumnsDescription();
+    IEnumerable<IGridColumn> GetColumnsDescription();
 
     void SortColumn(string dataPropertyName, ADGSortingDirection sortingDirection);
 }

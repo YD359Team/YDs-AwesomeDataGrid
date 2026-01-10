@@ -2,7 +2,7 @@
 
 namespace YDs_AwesomeDataGrid
 {
-    sealed class CellStyle
+    public sealed class CellStyle
     {
         public static readonly CellStyle Default = new CellStyle();
 
