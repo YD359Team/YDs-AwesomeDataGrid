@@ -175,9 +175,6 @@ namespace YDs_AwesomeDataGrid
         #endregion
 
         #region Graphics
-        private readonly Brush _defaultTextBrush = Brushes.Black;
-        private readonly Brush _highlightTextBrush = SystemBrushes.HighlightText;
-        private readonly Brush _highlightBackgroundBrush = new SolidBrush(Color.FromArgb(128, SystemColors.Highlight));
         private readonly Brush _maskBrush = new SolidBrush(Color.FromArgb(100, Color.DarkGray));
         private readonly SolidBrush _thumbBrush = new SolidBrush(SystemColors.ControlDarkDark);
         private readonly Pen _selectedBorderPen = new Pen(SystemColors.HighlightText, 1f);
@@ -1163,9 +1160,6 @@ namespace YDs_AwesomeDataGrid
             try
             {
                 // cant disposing brushes from SystemBrushes. etc
-                //_highlightBackgroundBrush?.Dispose();
-                //_highlightTextBrush?.Dispose();
-                //_defaultTextBrush?.Dispose();
                 _thumbBrush.Dispose();
                 _maskBrush?.Dispose();
                 _hoveredBorderPen?.Dispose();
