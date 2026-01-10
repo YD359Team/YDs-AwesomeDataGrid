@@ -181,6 +181,7 @@ namespace YDs_AwesomeDataGrid
         private readonly Pen _hoveredBorderPen = new Pen(Color.DeepSkyBlue, 1f);
         #endregion
 
+        #region Styles
         private readonly CellStyle _defaultCellStyle = new CellStyle()
         {
              Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point)
@@ -189,6 +190,7 @@ namespace YDs_AwesomeDataGrid
         {
             Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point)
         };
+        #endregion
         #endregion
 
         #region Constructor
@@ -283,24 +285,6 @@ namespace YDs_AwesomeDataGrid
             RecalcRects();
             UpdateVisibleCells();
             Invalidate();
-        }
-
-        protected override bool IsInputKey(Keys keyData)
-        {
-            switch (keyData)
-            {
-                case Keys.Right:
-                case Keys.Left:
-                case Keys.Up:
-                case Keys.Down:
-                    return true;
-                case Keys.Shift | Keys.Right:
-                case Keys.Shift | Keys.Left:
-                case Keys.Shift | Keys.Up:
-                case Keys.Shift | Keys.Down:
-                    return true;
-            }
-            return base.IsInputKey(keyData);
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
