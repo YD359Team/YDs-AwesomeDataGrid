@@ -32,7 +32,7 @@ namespace YDs_AwesomeDataGrid.Columns
         }
 
         public override string Format(DateTime value)
-            => value.ToString();
+            => value.ToString("dd.MM.yyyy");
 
         public override object GetDefaultValue() => false;
     }

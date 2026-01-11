@@ -14,6 +14,7 @@ namespace YDs_AwesomeDataGrid.Columns
 
         // Данные
         public object Value { get; }
+        public string Pres { get; }
 
         // Состояние
         public bool IsSelected { get; }
@@ -28,6 +29,7 @@ namespace YDs_AwesomeDataGrid.Columns
             Rectangle bounds,
             Rectangle contentBounds,
             object value,
+            string pres,
             bool isSelected,
             bool isHovered,
             CellStyle style)
@@ -37,6 +39,7 @@ namespace YDs_AwesomeDataGrid.Columns
             Bounds = bounds;
             ContentBounds = contentBounds;
             Value = value;
+            Pres = pres;
             IsSelected = isSelected;
             IsHovered = isHovered;
             Style = style;

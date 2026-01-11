@@ -60,7 +60,6 @@ namespace YDs_AwesomeDataGrid
         {
             this.Editor.Visible = false;
             this.Grid.Controls.Remove(this.Editor);
-            ((ComboBox)this.Editor).Items.Clear();
         }
 
 #if NET10_0_OR_GREATER

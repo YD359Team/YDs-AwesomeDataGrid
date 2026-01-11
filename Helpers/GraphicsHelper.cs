@@ -35,7 +35,7 @@ namespace YDs_AwesomeDataGrid.Helpers
                 g.FillRectangle(SystemBrushes.ControlLightLight, ctx.Bounds);
             }
 
-            string text = ctx.Value?.ToString() ?? string.Empty;
+            string text = ctx.Pres ?? string.Empty;
             g.DrawString(text, ctx.Style.Font, Brushes.Black, ctx.Bounds, DefaultStringFormat);
             
             g.DrawRectangle(Pens.DarkGray, ctx.Bounds);

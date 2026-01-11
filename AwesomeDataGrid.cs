@@ -88,7 +88,6 @@ namespace YDs_AwesomeDataGrid
             get => _dataProvider ?? EmptyProvider;
             set
             {
-                // clear enum cache
                 if (value.GetType() != typeof(EmptyDataProvider))
                 {
                     if (_dataProvider != null)
@@ -337,7 +336,7 @@ namespace YDs_AwesomeDataGrid
                 if (!_selector.IsVisible) return;
                 int row = _selector.Row;
                 int col = _selector.Column;
-                Clipboard.SetText(GetCellPres(this.DataProvider.GetData(row, col), _columns[col].DataType));
+                Clipboard.SetText(_columns[col].Format(this.DataProvider.GetData(row, col)));
 
             }
             // Ctrl+V
@@ -653,8 +652,8 @@ namespace YDs_AwesomeDataGrid
             if (_columns[col] is CheckBoxColumn)
             {
                 SetData(row, col, !(bool)GetData(row, col));
-                _cellCache.Invalidate(row, col);
-                Invalidate(GetCellRect(_selector.Row, _selector.Column));
+                UpdateVisibleCells();
+                SmartInvalidate(GetCellRect(_selector.Row, _selector.Column));
                 return;
             }
 
@@ -800,14 +799,14 @@ namespace YDs_AwesomeDataGrid
             {
                 for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
                 {
-                    _cellCache.Get(row, col, () =>
+                    _cellCache.GetOrCreate(row, col, () =>
                     {
                         var value = DataProvider.GetData(row, col);
-                        return new CellVisual
-                        {
-                            Text = GetCellPres(value, _columns[col].DataType),
-                            Style = ResolveCellStyle(row, col, value)
-                        };
+                        return new CellVisual(
+                            value,
+                            _columns[col].Format(value),
+                            ResolveCellStyle(row, col, value)
+                        );
                     });
                 }
             }
@@ -906,16 +905,6 @@ namespace YDs_AwesomeDataGrid
             Invalidate();
         }
 
-        private string GetCellPres(object value, Type dataType)
-        {
-            if (value == null) return string.Empty;
-            if (dataType == typeof(float)) return ((float)value).ToString("F2");
-            if (dataType == typeof(double)) return ((double)value).ToString("F2");
-            if (dataType == typeof(decimal)) return ((decimal)value).ToString("F2");
-            if (dataType == typeof(DateTime)) return ((DateTime)value).ToShortDateString();
-            return value?.ToString() ?? string.Empty;
-        }
-
 #if NET10_0_OR_GREATER
         private object? GetDefaultValueForColumn(IGridColumn column)
 #else
@@ -995,7 +984,7 @@ namespace YDs_AwesomeDataGrid
 
                     g.SetClip(cellRect);
 
-                    var value = DataProvider.GetData(row, col);
+                    var visual = _cellCache.Get(row, col);
 
                     bool isSelected = _selector.IsVisible &&
                                       (_selectionType == ADGSelectionTypes.Cell
@@ -1013,7 +1002,8 @@ namespace YDs_AwesomeDataGrid
                         col,
                         cellRect,
                         cellRect,
-                        value,
+                        visual.Value,
+                        visual.Text,
                         isSelected,
                         isHovered,
                         _defaultCellStyle
@@ -1083,8 +1073,6 @@ namespace YDs_AwesomeDataGrid
             }
         }
 
-        
-
         #endregion
 
         #region EventHandlers
@@ -1107,6 +1095,7 @@ namespace YDs_AwesomeDataGrid
         private void InlineEditor_OnEndEdit(IInlineEditor editor)
         {
             SetData(this.EditingCellAddress.Row, this.EditingCellAddress.Column, editor.Value);
+            UpdateVisibleCells();
             SmartInvalidate(GetCellRect(this.EditingCellAddress.Row, this.EditingCellAddress.Column));
             this.EditingCellAddress = default;
         }

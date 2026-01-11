@@ -11,7 +11,7 @@ namespace YDs_AwesomeDataGrid.Managers
         private int _firstRow = -1;
         private int _lastRow = -1;
 
-        public CellVisual Get(int row, int column, Func<CellVisual> factory)
+        public CellVisual GetOrCreate(int row, int column, Func<CellVisual> factory)
         {
             var key = new CellKey(row, column);
 
@@ -20,6 +20,14 @@ namespace YDs_AwesomeDataGrid.Managers
                 visual = factory();
                 _cache[key] = visual;
             }
+
+            return visual;
+        }
+
+        public CellVisual Get(int row, int column)
+        {
+            if (!_cache.TryGetValue(new CellKey(row, column), out var visual))
+                throw new InvalidOperationException("CellVisual not prepared");
 
             return visual;
         }
