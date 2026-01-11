@@ -600,6 +600,7 @@ namespace YDs_AwesomeDataGrid
 
                 ViewportChanged?.Invoke();
                 _cellCache.InvalidateAll();
+                UpdateVisibleCells();
                 Invalidate();
             }
             // find cell by point
