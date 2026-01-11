@@ -130,16 +130,32 @@ namespace YDs_AwesomeDataGrid.Managers
                 );
             }
 
-            RowHeaderRect = isRowHeaderVisible
+            RowHeaderRect = new Rectangle(
+                0,
+                GridRect.Y,
+                GridRect.X,
+                GridRect.Height
+            );
+
+            // Vertical scrollbar
+            VertScrollRect = NeedVertScroll
                 ? new Rectangle(
-                    0,
-                    GridRect.Y,
-                    RowHeaderWidth,
-                    GridRect.Height
+                    controlSize.Width - SystemInformation.VerticalScrollBarWidth,
+                    HeaderHeight,
+                    SystemInformation.VerticalScrollBarWidth,
+                    controlSize.Height - HeaderHeight - (NeedHorScroll ? SystemInformation.HorizontalScrollBarHeight : 0)
                 )
                 : Rectangle.Empty;
 
-            VisibleRowCount = Math.Max(1, GridRect.Height / RowHeight);
+            // Horizontal scrollbar
+            HorScrollRect = NeedHorScroll
+                ? new Rectangle(
+                    GridRect.X,
+                    controlSize.Height - SystemInformation.HorizontalScrollBarHeight,
+                    GridRect.Width,
+                    SystemInformation.HorizontalScrollBarHeight
+                )
+                : Rectangle.Empty;
         }
 
         public Rectangle GetHeaderRect(int col, int firstVisibleColumn)
