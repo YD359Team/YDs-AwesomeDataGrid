@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using YDs_AwesomeDataGrid.Helpers;
-using YDs_AwesomeDataGrid.Managers;
 
-namespace YDs_AwesomeDataGrid
+namespace YDs_AwesomeDataGrid.Managers
 {
     internal sealed class ScrollManager
     {
@@ -53,17 +52,10 @@ namespace YDs_AwesomeDataGrid
 
             int thumbY = layout.VertScrollRect.Y + offsetY;
 
-#if NET10_0_OR_GREATER
-            thumbY = Math.Clamp(
-                thumbY,
-                layout.VertScrollRect.Top,
-                layout.VertScrollRect.Bottom - thumbHeight);
-#else
             thumbY = MathHelper.Clamp(
-                thumbY,
-                layout.VertScrollRect.Top,
-                layout.VertScrollRect.Bottom - thumbHeight);
-#endif
+                          thumbY,
+                          layout.VertScrollRect.Top,
+                          layout.VertScrollRect.Bottom - thumbHeight);
 
             data.VertThumb = new Rectangle(
                 layout.VertScrollRect.X,

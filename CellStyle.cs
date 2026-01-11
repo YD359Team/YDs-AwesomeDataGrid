@@ -15,8 +15,5 @@ namespace YDs_AwesomeDataGrid
         public Color BackColor { get; set; } = Color.Transparent;
         public Font Font { get; set; } = null;
 #endif
-
-        // позже:
-        // public Pen? Border { get; init; }
     }
 }

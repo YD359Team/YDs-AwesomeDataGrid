@@ -105,22 +105,12 @@ namespace YDs_AwesomeDataGrid
             }
         }
         private IDataProvider _dataProvider;
-#endregion
-#endregion
+        #endregion
+        #endregion
 
         #region PrivateProperties
-        private int VisibleRowCount => _visibleRowCount;
-        private int LastVisibleColumn
-        {
-            get
-            {
-                int viewportWidth = _layout.GridRect.Width;
-                int firstCol = _viewPort.FirstVisibleColumn;
-                int visibleCols = (viewportWidth + _layout.ColumnWidth - 1) / _layout.ColumnWidth;
-
-                return Math.Min(ColumnCount - 1, firstCol + visibleCols - 1);
-            }
-        }
+        private int LastVisibleColumn =>
+            _layout.GetLastVisibleColumn(_viewPort.FirstVisibleColumn);
 
         private CellKey EditingCellAddress { get; set; }
         #endregion
@@ -134,7 +124,6 @@ namespace YDs_AwesomeDataGrid
         private readonly Selector _selector = new Selector();
         private readonly HoverSelector _hoverSelector = new HoverSelector();
         private GridInnerState _gridInnerState;
-        private int _visibleRowCount;
         private bool _needVertScroll;
         private bool _needHorScroll;
         private bool _isScrollVertHovered;
@@ -159,12 +148,19 @@ namespace YDs_AwesomeDataGrid
         private int _cachedLastRow = -1;
         #endregion
 
+        #region ResizeColumns
+        private bool _isResizingColumn;
+        private int _resizingColumnIndex;
+        private int _resizeStartX;
+        private int _resizeStartWidth;
+        #endregion
+
         private int _hoveredHeaderCol = -1;
         private int _pressedHeaderCol = -1;
         #region SortColumns
         private string _sortedColumnName;
         private ADGSortingDirection _sortingDirection = ADGSortingDirection.None;
-        #endregion
+        #endregion     
 
         #region DragThumb
         private bool _isDraggingVertThumb;
@@ -253,6 +249,7 @@ namespace YDs_AwesomeDataGrid
             DrawRowHeaders(e.Graphics, _viewPort.FirstVisibleRow);
             DrawColumnHeaders(e.Graphics);
             DrawCells(e.Graphics);
+            DrawVerticalGridLineAfterLastColumn(e.Graphics);
             DrawScrollBars(e.Graphics);
             if (_gridInnerState == GridInnerState.Editing)
             {
@@ -263,7 +260,7 @@ namespace YDs_AwesomeDataGrid
 
         public Rectangle GetRowHeaderCellRect(int row, int firstVisibleRow)
         {
-            if (row < firstVisibleRow || row >= firstVisibleRow + VisibleRowCount)
+            if (row < firstVisibleRow || row >= firstVisibleRow + _layout.VisibleRowCount)
                 return Rectangle.Empty;
 
             int y = _layout.GridRect.Y + (row - firstVisibleRow) * _layout.RowHeight;
@@ -434,6 +431,31 @@ namespace YDs_AwesomeDataGrid
 
             Rectangle mouseRect = new Rectangle(e.Location, new Size(1, 1));
 
+            if (_gridInnerState != GridInnerState.Editing &&
+                TryGetColumnHeaderByPoint(e.Location, out int col) &&
+                IsOnHeaderResizeGrip(e.Location, col))
+            {
+                Cursor = Cursors.VSplit;
+            }
+            else if (!_isResizingColumn)
+            {
+                Cursor = Cursors.Default;
+            }
+
+            if (_isResizingColumn)
+            {
+                int dx = e.X - _resizeStartX;
+                _layout.SetColumnWidth(
+                    _resizingColumnIndex,
+                    _resizeStartWidth + dx
+                );
+
+                RecalcRects();
+                UpdateVisibleCells();
+                Invalidate();
+                return;
+            }
+
             if (_isDraggingVertThumb)
             {
                 int dy = e.Y - _dragStartMousePos.Y;
@@ -442,14 +464,10 @@ namespace YDs_AwesomeDataGrid
                 if (scrollRange <= 0) return;
 
                 float ratio = dy / (float)scrollRange;
-                int maxFirstRow = Math.Max(0, RowCount - VisibleRowCount);
+                int maxFirstRow = Math.Max(0, RowCount - _layout.VisibleRowCount);
 
                 _viewPort.FirstVisibleRow = _dragStartFirstVisibleRow + (int)(ratio * maxFirstRow);
-#if NET10_0_OR_GREATER
-                _viewPort.FirstVisibleRow = Math.Clamp(_viewPort.FirstVisibleRow, 0, maxFirstRow);
-#else
                 _viewPort.FirstVisibleRow = MathHelper.Clamp(_viewPort.FirstVisibleRow, 0, maxFirstRow);
-#endif
 
                 UpdateScrollThumbs();
                 UpdateVisibleCells();
@@ -468,11 +486,7 @@ namespace YDs_AwesomeDataGrid
                 int maxFirstCol = Math.Max(0, ColumnCount - _layout.VisibleColumnCount(_viewPort.FirstVisibleColumn));
 
                 _viewPort.FirstVisibleColumn = _dragStartFirstVisibleCol + (int)(ratio * maxFirstCol);
-#if NET10_0_OR_GREATER
-                _viewPort.FirstVisibleColumn = Math.Clamp(_viewPort.FirstVisibleColumn, 0, maxFirstCol);
-#else
                 _viewPort.FirstVisibleColumn = MathHelper.Clamp(_viewPort.FirstVisibleColumn, 0, maxFirstCol);
-#endif
 
                 UpdateScrollThumbs();
                 UpdateVisibleCells();
@@ -507,7 +521,7 @@ namespace YDs_AwesomeDataGrid
             int lastHoveredRow = _hoverSelector.Row;
             int lastHoveredCol = _hoverSelector.Column;
 
-            if (TryGetColumnHeaderByPoint(e.Location, out int col))
+            if (TryGetColumnHeaderByPoint(e.Location, out col))
             {
                 if (_hoveredHeaderCol != col)
                 {
@@ -549,8 +563,21 @@ namespace YDs_AwesomeDataGrid
         {
             base.OnMouseDown(e);
 
+            if (e.Button != MouseButtons.Left) return;
+
             Rectangle mouseRect = new Rectangle(e.Location, new Size(1, 1));
             bool isInGrid = _layout.GridRect.IntersectsWith(mouseRect);
+
+            if (TryGetColumnHeaderByPoint(e.Location, out int col) &&
+                IsOnHeaderResizeGrip(e.Location, col))
+            {
+                _isResizingColumn = true;
+                _resizingColumnIndex = col;
+                _resizeStartX = e.X;
+                _resizeStartWidth = _layout.GetColumnWidth(col);
+                Capture = true;
+                return;
+            }
 
             Rectangle vertThumb = _scrollBarData.VertThumb;
             Rectangle horThumb = _scrollBarData.HorThumb;
@@ -604,7 +631,7 @@ namespace YDs_AwesomeDataGrid
                 Invalidate();
             }
             // find cell by point
-            else if (isInGrid && TryGetCellByPoint(e.Location, out int row, out int col))
+            else if (isInGrid && TryGetCellByPoint(e.Location, out int row, out col))
             {
                 int oldRow = _selector.Row;
                 int oldCol = _selector.Column;
@@ -625,6 +652,10 @@ namespace YDs_AwesomeDataGrid
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
+
+            _isResizingColumn = false;
+            Capture = false;
+            Cursor = Cursors.Default;
 
             if (_pressedHeaderCol != -1)
             {
@@ -681,7 +712,7 @@ namespace YDs_AwesomeDataGrid
             else
                 _viewPort.FirstVisibleRow = Math.Min(
                     _viewPort.FirstVisibleRow + 1,
-                    Math.Max(0, RowCount - VisibleRowCount)
+                    Math.Max(0, RowCount - _layout.VisibleRowCount)
                 );
 
             UpdateScrollThumbs();
@@ -715,7 +746,6 @@ namespace YDs_AwesomeDataGrid
                 IsRowHeaderVisible
             );
 
-            _visibleRowCount = _layout.VisibleRowCount;
             _needVertScroll = _layout.NeedVertScroll;
             _needHorScroll = _layout.NeedHorScroll;
 
@@ -789,7 +819,7 @@ namespace YDs_AwesomeDataGrid
         private void UpdateVisibleCells()
         {
             int startRow = _viewPort.FirstVisibleRow;
-            int endRow = Math.Min(RowCount, startRow + VisibleRowCount);
+            int endRow = Math.Min(RowCount, startRow + _layout.VisibleRowCount);
 
             if (startRow != _cachedFirstRow || endRow != _cachedLastRow)
             {
@@ -845,9 +875,9 @@ namespace YDs_AwesomeDataGrid
                 _viewPort.FirstVisibleRow = _selector.Row;
                 updated = true;
             }
-            else if (_selector.Row >= _viewPort.FirstVisibleRow + VisibleRowCount)
+            else if (_selector.Row >= _viewPort.FirstVisibleRow + _layout.VisibleRowCount)
             {
-                _viewPort.FirstVisibleRow = _selector.Row - VisibleRowCount + 1;
+                _viewPort.FirstVisibleRow = _selector.Row - _layout.VisibleRowCount + 1;
                 updated = true;
             }
 
@@ -858,7 +888,7 @@ namespace YDs_AwesomeDataGrid
             }
             else if (_selector.Column > LastVisibleColumn)
             {
-                _viewPort.FirstVisibleColumn = _selector.Column - (_layout.GridRect.Width / _layout.ColumnWidth) + 1;
+                _viewPort.FirstVisibleColumn = _selector.Column;
                 updated = true;
             }
 
@@ -887,21 +917,20 @@ namespace YDs_AwesomeDataGrid
             _selector.IsVisible = true;
 
             int firstRow = _viewPort.FirstVisibleRow;
-            int lastRow = firstRow + VisibleRowCount - 1;
+            int lastRow = firstRow + _layout.VisibleRowCount - 1;
 
             if (row < firstRow)
                 _viewPort.FirstVisibleRow = row;
             else if (row > lastRow)
-                _viewPort.FirstVisibleRow = row - VisibleRowCount + 1;
+                _viewPort.FirstVisibleRow = row - _layout.VisibleRowCount + 1;
 
             int firstCol = _viewPort.FirstVisibleColumn;
-            int visibleCols = (_layout.GridRect.Width + _layout.ColumnWidth - 1) / _layout.ColumnWidth;
-            int lastCol = firstCol + visibleCols - 1;
+            int lastVisibleCol = LastVisibleColumn;
 
-            if (col < firstCol)
+            if (col < _viewPort.FirstVisibleColumn)
                 _viewPort.FirstVisibleColumn = col;
-            else if (col > lastCol)
-                _viewPort.FirstVisibleColumn = col - visibleCols + 1;
+            else if (col > lastVisibleCol)
+                _viewPort.FirstVisibleColumn = col;
 
             UpdateVisibleCells();
             UpdateScrollThumbs();
@@ -975,7 +1004,7 @@ namespace YDs_AwesomeDataGrid
         private void DrawCells(Graphics g)
         {
             int startRow = _viewPort.FirstVisibleRow;
-            int endRow = Math.Min(RowCount, startRow + this.VisibleRowCount);
+            int endRow = Math.Min(RowCount, startRow + _layout.VisibleRowCount);
 
             for (int row = startRow; row < endRow; row++)
             {
@@ -1019,6 +1048,27 @@ namespace YDs_AwesomeDataGrid
             }
         }
 
+        private void DrawVerticalGridLineAfterLastColumn(Graphics g)
+        {
+            int x = _layout.GridRect.X;
+
+            for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
+            {
+                x += _layout.GetColumnWidth(col);
+            }
+
+            // ограничиваем линию GridRect'ом
+            x = Math.Min(x, _layout.GridRect.Right);
+
+            g.DrawLine(
+                SystemPens.ControlDark,
+                x - 1,
+                _layout.GridRect.Y,
+                x - 1,
+                _layout.GridRect.Bottom
+            );
+        }
+
         private void DrawColumnHeaders(Graphics g)
         {
             for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
@@ -1027,6 +1077,8 @@ namespace YDs_AwesomeDataGrid
 
                 IGridColumn column = _columns[col];
 
+                if (rect.IsEmpty)
+                    continue;
                 HeaderContext ctx = new HeaderContext(
                     col,
                     rect,
@@ -1048,7 +1100,7 @@ namespace YDs_AwesomeDataGrid
                 return;
 
             for (int row = firstVisibleRow;
-                 row < firstVisibleRow + VisibleRowCount && row < RowCount;
+                 row < firstVisibleRow + _layout.VisibleRowCount && row < RowCount;
                  row++)
             {
                 Rectangle r = GetRowHeaderCellRect(row, firstVisibleRow);
@@ -1090,7 +1142,7 @@ namespace YDs_AwesomeDataGrid
         private void OnViewportChanged()
         {
             int firstRow = _viewPort.FirstVisibleRow;
-            int lastRow = Math.Min(RowCount, firstRow + VisibleRowCount);
+            int lastRow = Math.Min(RowCount, firstRow + _layout.VisibleRowCount);
 
             _cellCache.UpdateViewport(firstRow, lastRow);
         }
