@@ -25,7 +25,7 @@ namespace YDs_AwesomeDataGrid
         #region PublicProperties
 
         #region StylesOverrides
-        private Font _font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+        private Font _font = FontManager.ModernCommon;
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public new Font Font
         {
@@ -180,11 +180,11 @@ namespace YDs_AwesomeDataGrid
         #region Styles
         private readonly CellStyle _defaultCellStyle = new CellStyle()
         {
-             Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point)
+             Font = FontManager.ModernCommon
         };
         private readonly CellStyle _defaultColHeaderStyle = new CellStyle()
         {
-            Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point)
+            Font = FontManager.ModernTitle
         };
         #endregion
         #endregion
