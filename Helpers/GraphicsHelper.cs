@@ -71,6 +71,35 @@ namespace YDs_AwesomeDataGrid.Helpers
             g.DrawRectangle(Pens.DarkGray, ctx.Bounds);
         }
 
+        private static readonly Size ImageSize = new Size(32, 32);
+
+        public static void DrawImage(Graphics g, CellContext ctx)
+        {
+            if (ctx.IsSelected)
+            {
+                g.FillRectangle(Brushes.LightSkyBlue, ctx.Bounds);
+            }
+            else if (ctx.IsHovered)
+            {
+                g.FillRectangle(Brushes.LightCyan, ctx.Bounds);
+            }
+            else
+            {
+                g.FillRectangle(SystemBrushes.ControlLightLight, ctx.Bounds);
+            }
+
+            if (ctx.Value is Bitmap)
+            {
+                g.DrawImage((Bitmap)ctx.Value, ctx.Bounds.Location.X + (ctx.Bounds.Location.X / 2) - ImageSize.Width, ctx.Bounds.Location.Y, ImageSize.Width, ImageSize.Height);
+            }
+            else
+            {
+                g.DrawIcon(SystemIcons.Error, ctx.Bounds);
+            }
+
+            g.DrawRectangle(Pens.DarkGray, ctx.Bounds);
+        }
+
         public static void DrawHeader(Graphics g, HeaderContext ctx)
         {
             // background
