@@ -639,6 +639,8 @@ namespace YDs_AwesomeDataGrid
 
         protected override void OnMouseDoubleClick(MouseEventArgs e)
         {
+            if (e.Button != MouseButtons.Left) return;
+
             if (_layout.GridRect.Contains(e.Location) && TryGetCellByPoint(e.Location, out int row, out int col))
             {
                 if (col >= _columns.Length) return;
