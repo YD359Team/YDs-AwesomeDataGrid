@@ -13,6 +13,11 @@
             this.Row = row;
             this.Column = column;
 	    }
+
+        public override int GetHashCode() 
+        {
+            return Row ^ Column;
+        }
     }
 #endif
 }
