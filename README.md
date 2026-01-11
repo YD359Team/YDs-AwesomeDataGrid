@@ -12,6 +12,7 @@ Simple and faster DataGridView without dependencies
 - ✅ Virtualized by default
 - ✅ Key inputs (arrows, ESC, Space, Enter, Del, PgDown, PgUp)
 - ✅ Fully custom scrollbars with dragging
+- ✅ Resized columns
 - ✅ Latest .NET (10) and .NET Framework support (4.8.1)
 - ✅ Always free
 
