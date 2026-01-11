@@ -241,7 +241,7 @@ namespace YDs_AwesomeDataGrid
         {
             e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            e.Graphics.FillRectangle(Brushes.White, this.ClientRectangle);
+            e.Graphics.FillRectangle(SystemBrushes.ControlDark, this.ClientRectangle);
 
             if (DataProvider == EmptyProvider)
                 return;
