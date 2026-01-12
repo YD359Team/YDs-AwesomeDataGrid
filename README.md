@@ -21,7 +21,6 @@ Simple and faster DataGridView without dependencies
 
 1. Multiselect
 2. Export data to file
-3. [Maybe] Render control to Bitmap like Avalonia
 
 ## GetStarted
 

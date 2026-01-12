@@ -11,6 +11,7 @@ namespace YDs_AwesomeDataGrid.Managers
         private const int DEFAULT_ROW_HEADER_WIDTH = 40;
 
         public Rectangle GridRect { get; private set; }
+        public Rectangle HeaderRect { get; private set; }
         public Rectangle RowHeaderRect { get; private set; }
         public Rectangle VertScrollRect { get; private set; }
         public Rectangle HorScrollRect { get; private set; }
@@ -135,6 +136,13 @@ namespace YDs_AwesomeDataGrid.Managers
                 GridRect.Y,
                 GridRect.X,
                 GridRect.Height
+            );
+
+            HeaderRect = new Rectangle(
+                0,
+                0,
+                controlSize.Width - (NeedVertScroll ? SystemInformation.VerticalScrollBarWidth : 0),
+                HeaderHeight
             );
 
             // Vertical scrollbar

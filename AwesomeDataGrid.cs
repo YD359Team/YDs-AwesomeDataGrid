@@ -1,9 +1,5 @@
 ﻿using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Eventing.Reader;
-using System.Runtime.CompilerServices;
 using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
 using YDs_AwesomeDataGrid.Enums;
 using YDs_AwesomeDataGrid.Helpers;
 using YDs_AwesomeDataGrid.InlineEditors;
@@ -13,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using YDs_AwesomeDataGrid.Managers;
 using YDs_AwesomeDataGrid.Columns;
+using YDs_AwesomeDataGrid.Extensions;
 
 namespace YDs_AwesomeDataGrid
 {
@@ -172,7 +169,6 @@ namespace YDs_AwesomeDataGrid
 
         #region Graphics
         private readonly Brush _maskBrush = new SolidBrush(Color.FromArgb(100, Color.DarkGray));
-        private readonly SolidBrush _thumbBrush = new SolidBrush(SystemColors.ControlDarkDark);
         private readonly Pen _selectedBorderPen = new Pen(SystemColors.HighlightText, 1f);
         private readonly Pen _hoveredBorderPen = new Pen(Color.DeepSkyBlue, 1f);
         #endregion
@@ -333,7 +329,6 @@ namespace YDs_AwesomeDataGrid
                 int row = _selector.Row;
                 int col = _selector.Column;
                 Clipboard.SetText(_columns[col].Format(this.DataProvider.GetData(row, col)));
-
             }
             // Ctrl+V
             else if (e.KeyCode == Keys.V && e.Modifiers == Keys.Control)
@@ -609,18 +604,8 @@ namespace YDs_AwesomeDataGrid
                 _hoveredHeaderCol = headerCol;
                 _pressedHeaderCol = headerCol;
 
-                ADGSortingDirection currentSortingDir = _sortingDirection;
-                if (currentSortingDir == ADGSortingDirection.None)
-                    currentSortingDir = ADGSortingDirection.Ascending;
-                else if (currentSortingDir == ADGSortingDirection.Ascending)
-                    currentSortingDir = ADGSortingDirection.Descending;
-                else if (currentSortingDir == ADGSortingDirection.Descending)
-                    currentSortingDir = ADGSortingDirection.Ascending;
-                else
-                    currentSortingDir = ADGSortingDirection.None;
-
                 _sortedColumnName = column.Name;
-                _sortingDirection = currentSortingDir;
+                _sortingDirection = _sortingDirection.GetNextClickState();
 
                 this.DataProvider.SortColumn(_sortedColumnName, _sortingDirection);
 
@@ -974,7 +959,7 @@ namespace YDs_AwesomeDataGrid
                 g.SetClip(_layout.VertScrollRect);
                 g.FillRectangle(Brushes.Gainsboro, _layout.VertScrollRect);
 
-                g.FillRectangle(_thumbBrush, _scrollBarData.VertThumb);
+                g.FillRectangle(SystemBrushes.ControlDarkDark, _scrollBarData.VertThumb);
 
                 g.ResetClip();
             }
@@ -984,7 +969,7 @@ namespace YDs_AwesomeDataGrid
                 g.SetClip(_layout.HorScrollRect);
                 g.FillRectangle(Brushes.Gainsboro, _layout.HorScrollRect);
 
-                g.FillRectangle(_thumbBrush, _scrollBarData.HorThumb);
+                g.FillRectangle(SystemBrushes.ControlDarkDark, _scrollBarData.HorThumb);
 
                 g.ResetClip();
             }
@@ -1003,7 +988,15 @@ namespace YDs_AwesomeDataGrid
                 {
                     Rectangle cellRect = GetCellRect(row, col);
 
-                    g.SetClip(cellRect);
+                    Rectangle visibleCellRect = Rectangle.Intersect(
+                        cellRect,
+                        _layout.GridRect
+                    );
+
+                    if (visibleCellRect.IsEmpty)
+                        continue;
+
+                    g.SetClip(visibleCellRect);
 
                     var visual = _cellCache.Get(row, col);
 
@@ -1021,7 +1014,7 @@ namespace YDs_AwesomeDataGrid
                     var ctx = new CellContext(
                         row,
                         col,
-                        cellRect,
+                        visibleCellRect,
                         cellRect,
                         visual.Value,
                         visual.Text,
@@ -1059,14 +1052,25 @@ namespace YDs_AwesomeDataGrid
 
         private void DrawColumnHeaders(Graphics g)
         {
+            g.FillRectangle(
+                Brushes.LightGray,
+                _layout.HeaderRect
+            );
+
             for (int col = _viewPort.FirstVisibleColumn; col <= LastVisibleColumn; col++)
             {
                 Rectangle rect = GetHeaderRect(col);
 
+                Rectangle visibleRect = Rectangle.Intersect(
+                    rect,
+                    _layout.HeaderRect
+                );
+
+                if (visibleRect.IsEmpty)
+                    continue;
+
                 IGridColumn column = _columns[col];
 
-                if (rect.IsEmpty)
-                    continue;
                 HeaderContext ctx = new HeaderContext(
                     col,
                     rect,
@@ -1080,7 +1084,16 @@ namespace YDs_AwesomeDataGrid
 
                 GraphicsHelper.DrawHeader(g, ctx);
             }
+
+            g.DrawLine(
+                SystemPens.InactiveBorder,
+                _layout.HeaderRect.Left,
+                _layout.HeaderRect.Bottom - 1,
+                _layout.HeaderRect.Right,
+                _layout.HeaderRect.Bottom - 1
+            );
         }
+
 
         private void DrawRowHeaders(Graphics g, int firstVisibleRow)
         {
@@ -1096,12 +1109,9 @@ namespace YDs_AwesomeDataGrid
                 bool selected = row == _selectedRow;
                 bool hot = row == _hotRow;
 
-                Brush back =
-                    selected ? SystemBrushes.Highlight :
+                g.FillRectangle((selected ? SystemBrushes.Highlight :
                     hot ? Brushes.LightGray :
-                    SystemBrushes.Control;
-
-                g.FillRectangle(back, r);
+                    SystemBrushes.Control), r);
 
                 ControlPaint.DrawBorder(g, r, SystemColors.ControlDark, ButtonBorderStyle.Solid);
 
@@ -1156,7 +1166,6 @@ namespace YDs_AwesomeDataGrid
             try
             {
                 // cant disposing brushes from SystemBrushes. etc
-                _thumbBrush.Dispose();
                 _maskBrush?.Dispose();
                 _hoveredBorderPen?.Dispose();
                 _selectedBorderPen?.Dispose();
