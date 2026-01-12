@@ -20,7 +20,7 @@ namespace YDs_AwesomeDataGrid.Managers
             get
             {
                 if (index < 0 || index >= _widths.Count)
-                    return 130; // fallback ширина по умолчанию
+                    return 130;
                 return _widths[index];
             }
             set

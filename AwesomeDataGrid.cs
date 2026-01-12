@@ -192,7 +192,6 @@ namespace YDs_AwesomeDataGrid
         #region Constructor
         public AwesomeDataGrid()
         {
-            // Enable double buffering and custom painting
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer
                 | ControlStyles.AllPaintingInWmPaint
                 | ControlStyles.UserPaint
@@ -720,8 +719,7 @@ namespace YDs_AwesomeDataGrid
             UpdateVisibleCells();
             Invalidate();
         }
-
-#endregion
+        #endregion
 
         #region PrivateMethods
         private void LoadData()
@@ -730,7 +728,7 @@ namespace YDs_AwesomeDataGrid
             _viewPort.FirstVisibleRow = 0;
             _viewPort.FirstVisibleColumn = 0;
             // load columns
-            _columns = this.DataProvider.GetColumnsDescription().ToArray();
+            _columns = this.DataProvider.GetColumns().ToArray();
 
             this.ColumnCount = _columns.Length;
             this.RowCount = this.DataProvider.RowCount;
@@ -899,13 +897,6 @@ namespace YDs_AwesomeDataGrid
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SmartInvalidate(Rectangle rect)
-        {
-            if (!rect.IsEmpty) 
-                Invalidate(rect);
-        }
-
         // move cursor to row,cel
         private void MoveTo(int row, int col)
         {
@@ -983,7 +974,6 @@ namespace YDs_AwesomeDataGrid
                 g.SetClip(_layout.VertScrollRect);
                 g.FillRectangle(Brushes.Gainsboro, _layout.VertScrollRect);
 
-                // Используем ScrollBarData
                 g.FillRectangle(_thumbBrush, _scrollBarData.VertThumb);
 
                 g.ResetClip();
@@ -994,7 +984,6 @@ namespace YDs_AwesomeDataGrid
                 g.SetClip(_layout.HorScrollRect);
                 g.FillRectangle(Brushes.Gainsboro, _layout.HorScrollRect);
 
-                // Используем ScrollBarData
                 g.FillRectangle(_thumbBrush, _scrollBarData.HorThumb);
 
                 g.ResetClip();
@@ -1057,7 +1046,6 @@ namespace YDs_AwesomeDataGrid
                 x += _layout.GetColumnWidth(col);
             }
 
-            // ограничиваем линию GridRect'ом
             x = Math.Min(x, _layout.GridRect.Right);
 
             g.DrawLine(

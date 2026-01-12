@@ -13,7 +13,7 @@ public interface IDataProvider
 
     void SetData(int row, int column, object value);
 
-    IEnumerable<IGridColumn> GetColumnsDescription();
+    IEnumerable<IGridColumn> GetColumns();
 
     void SortColumn(string dataPropertyName, ADGSortingDirection sortingDirection);
 }

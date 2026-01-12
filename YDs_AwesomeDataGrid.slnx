@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="../ADG Legacy Example/ADG Legacy Example.csproj" Id="94e3a1f9-1351-4d64-acfe-e953f31ad917" />
   <Project Path="../ADG Modern Example/ADG Modern Example.csproj" Id="bcbbbae9-3d7e-4624-8ab0-6fec552f631e" />
   <Project Path="YDs_AwesomeDataGrid.csproj" />
 </Solution>

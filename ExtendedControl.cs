@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 
 namespace YDs_AwesomeDataGrid
@@ -40,6 +41,13 @@ namespace YDs_AwesomeDataGrid
                     return true;
             }
             return base.IsInputKey(keyData);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected void SmartInvalidate(Rectangle rect)
+        {
+            if (!rect.IsEmpty)
+                Invalidate(rect);
         }
 
         private void ExtendedControl_MouseDown(object sender, MouseEventArgs e)

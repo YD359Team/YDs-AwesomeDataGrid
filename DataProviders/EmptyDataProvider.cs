@@ -17,7 +17,7 @@ public class EmptyDataProvider : IDataProvider
         // Do nothing
     }
 
-    public IEnumerable<IGridColumn> GetColumnsDescription()
+    public IEnumerable<IGridColumn> GetColumns()
     {
         return Array.Empty<IGridColumn>();
     }
