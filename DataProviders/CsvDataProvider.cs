@@ -9,6 +9,8 @@ public class CsvDataProvider : IDataProvider
 {
     public event Action OnDataChanged;
 
+    public int RowCount => _data.Count;
+
     private TextColumn[] _columns;
     private int _lineItemsCount;
     private List<string[]> _data;
@@ -47,8 +49,6 @@ public class CsvDataProvider : IDataProvider
     {
         return _columns;
     }
-
-    public int RowCount => _columns.Length;
 
     public void SortColumn(string dataPropertyName, ADGSortingDirection sortingDirection)
     {
