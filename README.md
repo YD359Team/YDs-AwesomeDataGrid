@@ -14,14 +14,14 @@ Simple and faster DataGridView without dependencies
 - ✅ Fully custom scrollbars with dragging
 - ✅ Resized columns
 - ✅ Latest .NET (10) and .NET Framework support (4.8.1)
+- ✅ Simple CSV Data provider for easy tables
 - ✅ Always free
 
 ## What's under developing now (TODOs)
 
 1. Multiselect
-2. Easy CSV load and reflected-driven DataSource
-3. Export data to file
-4. [Maybe] Render control to Bitmap like Avalonia
+2. Export data to file
+3. [Maybe] Render control to Bitmap like Avalonia
 
 ## GetStarted
 
