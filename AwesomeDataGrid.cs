@@ -207,6 +207,24 @@ namespace YDs_AwesomeDataGrid
         {
             return this.DataProvider.GetData(row, column);
         }
+
+        public object[] GetRow(int row)
+        {
+            object[] rowData = new object[this.ColumnCount];
+            for (int i = 0; i < this.ColumnCount; i++)
+            {
+                rowData[i] = this.DataProvider.GetData(row, i);
+            }
+            return rowData;
+        }
+
+        public void Clear()
+        {
+            this.RowCount = 0;
+            _cellCache.InvalidateAll();
+            UpdateScrollThumbs();
+            Invalidate();
+        }
         #endregion
 
         #region ControlOverrides
