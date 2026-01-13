@@ -13,7 +13,7 @@ Simple and faster DataGridView without dependencies
 - ✅ Key inputs (arrows, ESC, Space, Enter, Del, PgDown, PgUp)
 - ✅ Fully custom scrollbars with dragging
 - ✅ Resized columns
-- ✅ Latest .NET (10) and .NET Framework support (4.8.1)
+- ✅ Latest .NET (10) and .NET Framework (4.8.1) support
 - ✅ Simple CSV Data provider for easy tables
 - ✅ Always free
 
@@ -21,6 +21,8 @@ Simple and faster DataGridView without dependencies
 
 1. Multiselect
 2. Export data to file
+3. Customization for cells, rows and columns 
+4. Public properies and styles for grid customization
 
 ## GetStarted
 
