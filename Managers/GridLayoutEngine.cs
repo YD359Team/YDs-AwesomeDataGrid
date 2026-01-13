@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using YDs_AwesomeDataGrid.Columns;
 
 namespace YDs_AwesomeDataGrid.Managers
 {
@@ -166,6 +167,14 @@ namespace YDs_AwesomeDataGrid.Managers
                 : Rectangle.Empty;
         }
 
+        public void InitColumnWidths(int columnCount, Func<int, int> widthProvider)
+        {
+            _columnWidths = new ColumnWidthManager(columnCount, DEFAULT_COLUMN_WIDTH);
+
+            for (int i = 0; i < columnCount; i++)
+                _columnWidths[i] = widthProvider(i);
+        }
+
         public Rectangle GetHeaderRect(int col, int firstVisibleColumn)
         {
             if (_columnWidths == null)
@@ -279,20 +288,11 @@ namespace YDs_AwesomeDataGrid.Managers
             return false;
         }
 
-
         public int GetColumnWidth(int col) => _columnWidths[col];
 
         public void SetColumnWidth(int col, int width)
         {
             _columnWidths[col] = width;
-        }
-
-        private void EnsureColumnWidths(int columnCount)
-        {
-            if (_columnWidths == null || _columnWidths.ColumnCount != columnCount)
-            {
-                _columnWidths = new ColumnWidthManager(columnCount, DEFAULT_COLUMN_WIDTH);
-            }
         }
     }
 }

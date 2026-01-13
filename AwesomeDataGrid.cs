@@ -93,6 +93,7 @@ namespace YDs_AwesomeDataGrid
                     }
                     _dataProvider = value ?? EmptyProvider;
                     LoadData();
+                    InitDefaultColumnWidths();
                     InitEditorsForColumns();
                     RecalcRects();
                     UpdateVisibleCells();
@@ -215,21 +216,6 @@ namespace YDs_AwesomeDataGrid
             //
             RecalcRects();
             ViewportChanged += OnViewportChanged; 
-        }
-
-        private void InitEditorsForColumns()
-        {
-            foreach (IGridColumn column in _columns)
-            {
-                // checkbox is not inline editor
-                if (column is CheckBoxColumn || column is ImageColumn) continue;
-
-                var editor = column.CreateEditor();
-                editor.Grid = this;
-                _editors[column.Name] = editor;
-                editor.OnLostFocus += InlineEditor_OnLostFocus;
-                editor.OnEndEdit += InlineEditor_OnEndEdit;
-            }
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -734,6 +720,52 @@ namespace YDs_AwesomeDataGrid
 
             UpdateScrollThumbs();
             ViewportChanged?.Invoke();
+        }
+
+        private int MeasureColumnHeaderWidth(Graphics g, IGridColumn column)
+        {
+            const int Padding = 12;
+            const int SortIconWidth = 14; // sorting indicator
+            const int ResizeGrip = 4;
+
+            Size textSize = TextRenderer.MeasureText(
+                g,
+                column.HeaderText,
+                _defaultColHeaderStyle.Font,
+                new Size(int.MaxValue, int.MaxValue),
+                TextFormatFlags.SingleLine
+            );
+
+            return textSize.Width
+                   + Padding * 2
+                   + SortIconWidth
+                   + ResizeGrip;
+        }
+
+        private void InitDefaultColumnWidths()
+        {
+            using (var g = CreateGraphics())
+            {
+                _layout.InitColumnWidths(
+                    _columns.Length,
+                    i => MeasureColumnHeaderWidth(g, _columns[i])
+                );
+            }
+        }
+
+        private void InitEditorsForColumns()
+        {
+            foreach (IGridColumn column in _columns)
+            {
+                // checkbox is not inline editor
+                if (column is CheckBoxColumn || column is ImageColumn) continue;
+
+                var editor = column.CreateEditor();
+                editor.Grid = this;
+                _editors[column.Name] = editor;
+                editor.OnLostFocus += InlineEditor_OnLostFocus;
+                editor.OnEndEdit += InlineEditor_OnEndEdit;
+            }
         }
 
         private Rectangle GetCellRect(int row, int col)

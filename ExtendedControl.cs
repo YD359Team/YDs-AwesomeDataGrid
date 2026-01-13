@@ -11,7 +11,7 @@ namespace YDs_AwesomeDataGrid
         private bool _inDoubleClick;
         private Rectangle _doubleClickArea;
         private TimeSpan _doubleClickMaxTime;
-        private System.Windows.Forms.Timer _clickTimer;
+        private Timer _clickTimer;
 
         public ExtendedControl()
         {
@@ -90,7 +90,7 @@ namespace YDs_AwesomeDataGrid
 
         protected virtual void OnDoubleClick(object sender, MouseEventArgs e)
         {
-
+            // do nothing
         }
     }
 }
