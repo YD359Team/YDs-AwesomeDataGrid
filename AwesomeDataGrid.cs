@@ -161,11 +161,7 @@ namespace YDs_AwesomeDataGrid
         #endregion     
 
         #region DragThumb
-        private bool _isDraggingVertThumb;
-        private bool _isDraggingHorThumb;
-        private Point _dragStartMousePos;
-        private int _dragStartFirstVisibleRow;
-        private int _dragStartFirstVisibleCol;
+        private readonly DragThumb _dragThumb = new DragThumb(); 
         #endregion
 
         #region Graphics
@@ -197,17 +193,39 @@ namespace YDs_AwesomeDataGrid
         #endregion
 
         #region PublicAPI
+        /// <summary>
+        /// Sets the value of the specified cell in the data provider.
+        /// </summary>
+        /// <param name="row">The zero-based index of the row containing the cell to set. Must be within the valid range of rows.</param>
+        /// <param name="column">The zero-based index of the column containing the cell to set. Must be within the valid range of columns.</param>
+        /// <param name="value">The value to assign to the specified cell. Can be null.</param>
         public void SetData(int row, int column, object value)
         {
             this.DataProvider.SetData(row, column, value);
             InvalidateCellCache(row, column);
         }
 
+        /// <summary>
+        /// Retrieves the data value at the specified row and column indices.
+        /// </summary>
+        /// <param name="row">The zero-based index of the row from which to retrieve data. Must be within the valid range of rows for the
+        /// data source.</param>
+        /// <param name="column">The zero-based index of the column from which to retrieve data. Must be within the valid range of columns
+        /// for the data source.</param>
+        /// <returns>An object representing the data at the specified row and column. The return value may be null if the cell is
+        /// empty or the indices are out of range, depending on the data provider implementation.</returns>
         public object GetData(int row, int column)
         {
             return this.DataProvider.GetData(row, column);
         }
 
+        /// <summary>
+        /// Retrieves the values of all columns in the specified row as an array of objects.
+        /// </summary>
+        /// <param name="row">The zero-based index of the row to retrieve. Must be greater than or equal to 0 and less than the total
+        /// number of rows.</param>
+        /// <returns>An array of objects containing the values of each column in the specified row. The array length equals the
+        /// number of columns.</returns>
         public object[] GetRow(int row)
         {
             object[] rowData = new object[this.ColumnCount];
@@ -218,6 +236,12 @@ namespace YDs_AwesomeDataGrid
             return rowData;
         }
 
+        /// <summary>
+        /// Removes all rows and clears the contents of the grid.
+        /// </summary>
+        /// <remarks>After calling this method, the grid will be empty and any cached cell data will be
+        /// invalidated. This method also updates the scrollbars and refreshes the display to reflect the cleared
+        /// state.</remarks>
         public void Clear()
         {
             this.RowCount = 0;
@@ -454,9 +478,9 @@ namespace YDs_AwesomeDataGrid
                 return;
             }
 
-            if (_isDraggingVertThumb)
+            if (_dragThumb.IsDraggingVertThumb)
             {
-                int dy = e.Y - _dragStartMousePos.Y;
+                int dy = e.Y - _dragThumb.DragStartMousePos.Y;
 
                 int scrollRange = _layout.VertScrollRect.Height - _scrollBarData.VertThumb.Height;
                 if (scrollRange <= 0) return;
@@ -464,7 +488,7 @@ namespace YDs_AwesomeDataGrid
                 float ratio = dy / (float)scrollRange;
                 int maxFirstRow = Math.Max(0, RowCount - _layout.VisibleRowCount);
 
-                _viewPort.FirstVisibleRow = _dragStartFirstVisibleRow + (int)(ratio * maxFirstRow);
+                _viewPort.FirstVisibleRow = _dragThumb.DragStartFirstVisibleRow + (int)(ratio * maxFirstRow);
                 _viewPort.FirstVisibleRow = MathHelper.Clamp(_viewPort.FirstVisibleRow, 0, maxFirstRow);
 
                 UpdateScrollThumbs();
@@ -473,9 +497,9 @@ namespace YDs_AwesomeDataGrid
                 return;
             }
 
-            if (_isDraggingHorThumb)
+            if (_dragThumb.IsDraggingHorThumb)
             {
-                int dx = e.X - _dragStartMousePos.X;
+                int dx = e.X - _dragThumb.DragStartMousePos.X;
 
                 int scrollRange = _layout.HorScrollRect.Width - _scrollBarData.HorThumb.Width;
                 if (scrollRange <= 0) return;
@@ -483,7 +507,7 @@ namespace YDs_AwesomeDataGrid
                 float ratio = dx / (float)scrollRange;
                 int maxFirstCol = Math.Max(0, ColumnCount - _layout.VisibleColumnCount(_viewPort.FirstVisibleColumn));
 
-                _viewPort.FirstVisibleColumn = _dragStartFirstVisibleCol + (int)(ratio * maxFirstCol);
+                _viewPort.FirstVisibleColumn = _dragThumb.DragStartFirstVisibleCol + (int)(ratio * maxFirstCol);
                 _viewPort.FirstVisibleColumn = MathHelper.Clamp(_viewPort.FirstVisibleColumn, 0, maxFirstCol);
 
                 UpdateScrollThumbs();
@@ -582,18 +606,18 @@ namespace YDs_AwesomeDataGrid
 
             if (vertThumb.Contains(e.Location))
             {
-                _isDraggingVertThumb = true;
-                _dragStartMousePos = e.Location;
-                _dragStartFirstVisibleRow = _viewPort.FirstVisibleRow;
+                _dragThumb.IsDraggingVertThumb = true;
+                _dragThumb.DragStartMousePos = e.Location;
+                _dragThumb.DragStartFirstVisibleRow = _viewPort.FirstVisibleRow;
                 Capture = true; 
                 return;
             }
 
             if (horThumb.Contains(e.Location))
             {
-                _isDraggingHorThumb = true;
-                _dragStartMousePos = e.Location;
-                _dragStartFirstVisibleCol = _viewPort.FirstVisibleColumn;
+                _dragThumb.IsDraggingHorThumb = true;
+                _dragThumb.DragStartMousePos = e.Location;
+                _dragThumb.DragStartFirstVisibleCol = _viewPort.FirstVisibleColumn;
                 Capture = true;
                 return;
             }
@@ -651,8 +675,8 @@ namespace YDs_AwesomeDataGrid
                 _pressedHeaderCol = -1;
             }
 
-            _isDraggingVertThumb = false;
-            _isDraggingHorThumb = false;
+            _dragThumb.IsDraggingVertThumb = false;
+            _dragThumb.IsDraggingHorThumb = false;
             Capture = false;
         }
 
