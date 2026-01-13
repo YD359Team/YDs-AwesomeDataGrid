@@ -17,20 +17,6 @@ namespace YDs_AwesomeDataGrid.Managers
         public Rectangle VertScrollRect { get; private set; }
         public Rectangle HorScrollRect { get; private set; }
 
-        public int GetLastVisibleColumn(int firstVisibleColumn)
-        {
-            int x = 0;
-            int col = firstVisibleColumn;
-
-            while (col < ColumnCount && x < GridRect.Width)
-            {
-                x += GetColumnWidth(col);
-                col++;
-            }
-
-            return Math.Max(firstVisibleColumn, col - 1);
-        }
-
         public int ColumnCount { get; private set; }
         public int VisibleRowCount { get; private set; }
 
@@ -38,27 +24,13 @@ namespace YDs_AwesomeDataGrid.Managers
         public bool NeedHorScroll { get; private set; }
 
         public int RowHeight => DEFAULT_ROW_HEIGHT;
-        public int ColumnWidth => DEFAULT_COLUMN_WIDTH;
         public int HeaderHeight => DEFAULT_ROW_HEIGHT;
         public int RowHeaderWidth => DEFAULT_ROW_HEADER_WIDTH;
+
+        public int TotalColumnsWidth =>
+            _columnWidths?.TotalWidth ?? 0;
+
         private ColumnWidthManager _columnWidths;
-
-        public int VisibleColumnCount(int firstVisibleCol)
-        {
-            int width = 0;
-            int count = 0;
-
-            for (int i = firstVisibleCol; i < _columnWidths.ColumnCount; i++)
-            {
-                width += _columnWidths[i];
-                if (width > GridRect.Width)
-                    break;
-
-                count++;
-            }
-
-            return Math.Max(1, count);
-        }
 
         public void Recalc(
             Size controlSize,
@@ -67,39 +39,28 @@ namespace YDs_AwesomeDataGrid.Managers
             bool isRowHeaderVisible)
         {
             if (_columnWidths == null || _columnWidths.ColumnCount != columnCount)
-            {
                 _columnWidths = new ColumnWidthManager(columnCount, DEFAULT_COLUMN_WIDTH);
-            }
 
             ColumnCount = columnCount;
+
             int rowHeaderWidth = isRowHeaderVisible ? RowHeaderWidth : 0;
-
-            Rectangle workArea = new Rectangle(
-                0,
-                0,
-                controlSize.Width,
-                controlSize.Height
-            );
-
-            workArea.Y += HeaderHeight;
-            workArea.Height -= HeaderHeight;
 
             Rectangle gridRect = new Rectangle(
                 rowHeaderWidth,
-                workArea.Y,
-                Math.Max(0, workArea.Width - rowHeaderWidth),
-                Math.Max(0, workArea.Height)
+                HeaderHeight,
+                Math.Max(0, controlSize.Width - rowHeaderWidth),
+                Math.Max(0, controlSize.Height - HeaderHeight)
             );
 
-            VisibleRowCount = Math.Max(1, gridRect.Height / RowHeight);
+            int visibleRows = Math.Max(1, gridRect.Height / RowHeight);
 
-            NeedVertScroll = rowCount > VisibleRowCount;
-            NeedHorScroll = _columnWidths.TotalWidth > gridRect.Width;
+            bool needVert = rowCount > visibleRows;
+            bool needHor = _columnWidths.TotalWidth > gridRect.Width;
 
-            if (NeedVertScroll)
+            if (needVert)
                 gridRect.Width -= SystemInformation.VerticalScrollBarWidth;
 
-            if (NeedHorScroll)
+            if (needHor)
                 gridRect.Height -= SystemInformation.HorizontalScrollBarHeight;
 
             gridRect.Width = Math.Max(0, gridRect.Width);
@@ -107,37 +68,9 @@ namespace YDs_AwesomeDataGrid.Managers
 
             VisibleRowCount = Math.Max(1, gridRect.Height / RowHeight);
             NeedVertScroll = rowCount > VisibleRowCount;
+            NeedHorScroll = _columnWidths.TotalWidth > gridRect.Width;
 
             GridRect = gridRect;
-
-            NeedVertScroll = rowCount > VisibleRowCount;
-            if (NeedVertScroll)
-            {
-                GridRect = new Rectangle(
-                    GridRect.X,
-                    GridRect.Y,
-                    GridRect.Width - SystemInformation.VerticalScrollBarWidth,
-                    GridRect.Height
-                );
-            }
-
-            NeedHorScroll = _columnWidths.TotalWidth > GridRect.Width;
-            if (NeedHorScroll)
-            {
-                GridRect = new Rectangle(
-                    GridRect.X,
-                    GridRect.Y,
-                    GridRect.Width,
-                    GridRect.Height - SystemInformation.HorizontalScrollBarHeight
-                );
-            }
-
-            RowHeaderRect = new Rectangle(
-                0,
-                GridRect.Y,
-                GridRect.X,
-                GridRect.Height
-            );
 
             HeaderRect = new Rectangle(
                 0,
@@ -146,17 +79,23 @@ namespace YDs_AwesomeDataGrid.Managers
                 HeaderHeight
             );
 
-            // Vertical scrollbar
+            RowHeaderRect = new Rectangle(
+                0,
+                GridRect.Y,
+                GridRect.X,
+                GridRect.Height
+            );
+
             VertScrollRect = NeedVertScroll
                 ? new Rectangle(
                     controlSize.Width - SystemInformation.VerticalScrollBarWidth,
                     HeaderHeight,
                     SystemInformation.VerticalScrollBarWidth,
-                    controlSize.Height - HeaderHeight - (NeedHorScroll ? SystemInformation.HorizontalScrollBarHeight : 0)
+                    controlSize.Height - HeaderHeight
+                        - (NeedHorScroll ? SystemInformation.HorizontalScrollBarHeight : 0)
                 )
                 : Rectangle.Empty;
 
-            // Horizontal scrollbar
             HorScrollRect = NeedHorScroll
                 ? new Rectangle(
                     GridRect.X,
@@ -175,11 +114,47 @@ namespace YDs_AwesomeDataGrid.Managers
                 _columnWidths[i] = widthProvider(i);
         }
 
+        public int GetColumnWidth(int col) => _columnWidths[col];
+
+        public void SetColumnWidth(int col, int width)
+        {
+            _columnWidths[col] = width;
+        }
+
+        public int GetLastVisibleColumn(int firstVisibleColumn)
+        {
+            int x = 0;
+            int col = firstVisibleColumn;
+
+            while (col < ColumnCount &&
+                   x + _columnWidths[col] <= GridRect.Width)
+            {
+                x += _columnWidths[col];
+                col++;
+            }
+
+            return Math.Max(firstVisibleColumn, col - 1);
+        }
+
+        public int VisibleColumnCount(int firstVisibleCol)
+        {
+            int width = 0;
+            int count = 0;
+
+            for (int i = firstVisibleCol; i < _columnWidths.ColumnCount; i++)
+            {
+                width += _columnWidths[i];
+                if (width > GridRect.Width)
+                    break;
+
+                count++;
+            }
+
+            return Math.Max(1, count);
+        }
+
         public Rectangle GetHeaderRect(int col, int firstVisibleColumn)
         {
-            if (_columnWidths == null)
-                return Rectangle.Empty;
-
             int lastVisible = GetLastVisibleColumn(firstVisibleColumn);
 
             if (col < firstVisibleColumn || col > lastVisible)
@@ -189,17 +164,14 @@ namespace YDs_AwesomeDataGrid.Managers
             for (int i = firstVisibleColumn; i < col; i++)
                 x += _columnWidths[i];
 
-            return Rectangle.Intersect(
-                new Rectangle(x, 0, _columnWidths[col], RowHeight),
-                new Rectangle(GridRect.X, 0, GridRect.Width, RowHeight)
-            );
+            return new Rectangle(x, 0, _columnWidths[col], HeaderHeight);
         }
 
         public Rectangle GetCellRect(
-                int row,
-                int col,
-                int firstVisibleRow,
-                int firstVisibleCol)
+            int row,
+            int col,
+            int firstVisibleRow,
+            int firstVisibleCol)
         {
             if (row < firstVisibleRow || row >= firstVisibleRow + VisibleRowCount)
                 return Rectangle.Empty;
@@ -210,9 +182,7 @@ namespace YDs_AwesomeDataGrid.Managers
 
             int y = GridRect.Y + (row - firstVisibleRow) * RowHeight;
 
-            int w = _columnWidths[col];
-
-            return new Rectangle(x, y, w, RowHeight);
+            return new Rectangle(x, y, _columnWidths[col], RowHeight);
         }
 
         public bool TryGetCellByPoint(
@@ -231,9 +201,6 @@ namespace YDs_AwesomeDataGrid.Managers
             int localX = p.X - GridRect.X;
             int localY = p.Y - GridRect.Y;
 
-            if (localX < 0 || localY < 0)
-                return false;
-
             row = firstVisibleRow + localY / RowHeight;
 
             int x = 0;
@@ -251,16 +218,12 @@ namespace YDs_AwesomeDataGrid.Managers
             return false;
         }
 
-
         public bool TryGetColumnHeaderByPoint(
             Point p,
             int firstVisibleCol,
             out int col)
         {
             col = -1;
-
-            if (_columnWidths == null)
-                return false;
 
             if (p.Y < 0 || p.Y >= HeaderHeight)
                 return false;
@@ -270,7 +233,6 @@ namespace YDs_AwesomeDataGrid.Managers
             for (int i = firstVisibleCol; i < _columnWidths.ColumnCount; i++)
             {
                 int w = _columnWidths[i];
-
                 Rectangle r = new Rectangle(x, 0, w, HeaderHeight);
 
                 if (r.Contains(p))
@@ -280,19 +242,11 @@ namespace YDs_AwesomeDataGrid.Managers
                 }
 
                 x += w;
-
                 if (x >= GridRect.Right)
                     break;
             }
 
             return false;
-        }
-
-        public int GetColumnWidth(int col) => _columnWidths[col];
-
-        public void SetColumnWidth(int col, int width)
-        {
-            _columnWidths[col] = width;
         }
     }
 }

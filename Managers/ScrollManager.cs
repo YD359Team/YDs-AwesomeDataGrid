@@ -76,7 +76,7 @@ namespace YDs_AwesomeDataGrid.Managers
                 return;
             }
 
-            int totalWidth = columnCount * layout.ColumnWidth;
+            int totalWidth = layout.TotalColumnsWidth;
             float ratio = (float)layout.GridRect.Width / totalWidth;
 
             int thumbWidth = Math.Max(
