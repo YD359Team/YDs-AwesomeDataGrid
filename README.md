@@ -22,7 +22,7 @@ Simple and faster DataGridView without dependencies
 1. Multiselect
 2. Export data to file
 3. Customization for cells, rows and columns 
-4. Public properies and styles for grid customization
+4. Public properties and styles for grid customization
 
 ## GetStarted
 
