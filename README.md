@@ -10,7 +10,7 @@ Simple and faster DataGridView without dependencies
 - ✅ Inline editors (for string, DateTime, Enum, Int32, Float32) via small cached controls + checkboxes for Boolean
 - ✅ Image column support
 - ✅ Virtualized by default
-- ✅ Key inputs (arrows, ESC, Space, Enter, Del, PgDown, PgUp)
+- ✅ Key inputs (arrows, ESC, Space, Enter, Del, PgDown, PgUp, Ctrl+C/Ctrl+V)
 - ✅ Fully custom scrollbars with dragging
 - ✅ Resized columns
 - ✅ Latest .NET (10) and .NET Framework (4.8.1) support
