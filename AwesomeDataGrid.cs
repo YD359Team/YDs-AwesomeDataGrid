@@ -188,14 +188,8 @@ namespace YDs_AwesomeDataGrid
 
         #region Styles
         private GridStyle _gridStyle = PredefinedGridStyles.Light;
-        private readonly CellStyle _defaultCellStyle = new CellStyle()
-        {
-             Font = FontManager.ModernCommon
-        };
-        private readonly CellStyle _defaultColHeaderStyle = new CellStyle()
-        {
-            Font = FontManager.ModernTitle
-        };
+        private readonly CellStyle _defaultCellStyle = CellStyle.DefaultCell;
+        private readonly CellStyle _defaultColHeaderStyle = CellStyle.DefaultHeader;
         #endregion
         #endregion
 
@@ -946,8 +940,7 @@ namespace YDs_AwesomeDataGrid
 
         private CellStyle ResolveCellStyle(int row, int col, object value)
         {
-            // TODO: change to logic
-            return CellStyle.Default;
+            return CellStyle.DefaultCell;
         }
         #endregion
 
