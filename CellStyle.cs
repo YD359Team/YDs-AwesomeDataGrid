@@ -11,9 +11,9 @@ namespace YDs_AwesomeDataGrid
         public Color BackColor { get; init; } = Color.Transparent;
         public Font? Font { get; init; } = null;
 #else
-        public Color ForeColor { get; set; } = SystemColors.ControlText;
-        public Color BackColor { get; set; } = Color.Transparent;
-        public Font Font { get; set; } = null;
+        public Color ForeColor { get; private set; } = SystemColors.ControlText;
+        public Color BackColor { get; private set; } = Color.Transparent;
+        public Font Font { get; private set; } = null;
 #endif
     }
 }

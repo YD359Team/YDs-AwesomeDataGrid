@@ -7,9 +7,9 @@
         public string Text { get; init; } = string.Empty;
         public CellStyle Style { get; init; } = CellStyle.Default;
 #else
-        public object Value { get; set; }
-        public string Text { get; set; } = string.Empty;
-        public CellStyle Style { get; set; } = CellStyle.Default;
+        public object Value { get; private set; }
+        public string Text { get; private set; } = string.Empty;
+        public CellStyle Style { get; private set; } = CellStyle.Default;
 #endif
 
         public CellVisual(object value, string text, CellStyle style)
