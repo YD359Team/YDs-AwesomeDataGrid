@@ -1,4 +1,4 @@
-﻿namespace YDs_AwesomeDataGrid.Styles
+﻿namespace YDs_AwesomeDataGrid.Enums
 {
     public enum ADGGridThemes : byte
     {
