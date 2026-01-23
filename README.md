@@ -15,6 +15,7 @@ Simple and faster DataGridView without dependencies
 - ✅ Resized columns
 - ✅ Latest .NET (10) and .NET Framework (4.8.1) support
 - ✅ Simple CSV Data provider for easy tables
+- ✅ Light, Dark and custom theme support
 - ✅ Always free
 
 ## What's under developing now (TODOs)
