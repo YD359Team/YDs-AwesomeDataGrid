@@ -5,13 +5,16 @@ using System.Windows.Forms;
 
 namespace YDs_AwesomeDataGrid
 {
+    /// <summary>
+    /// Control with extended functionality
+    /// </summary>
     public class ExtendedControl : Control
     {
         private DateTime _lastClick;
         private bool _inDoubleClick;
         private Rectangle _doubleClickArea;
-        private TimeSpan _doubleClickMaxTime;
-        private Timer _clickTimer;
+        private readonly TimeSpan _doubleClickMaxTime;
+        private readonly Timer _clickTimer;
 
         public ExtendedControl()
         {
@@ -43,6 +46,11 @@ namespace YDs_AwesomeDataGrid
             return base.IsInputKey(keyData);
         }
 
+        /// <summary>
+        /// Invalidates the specified rectangular region of the control, causing a paint message to be sent for that
+        /// area if it is not empty.
+        /// </summary>
+        /// <param name="rect">The Rectangle that specifies the region to invalidate. If the rectangle is empty, no invalidation occurs.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void SmartInvalidate(Rectangle rect)
         {

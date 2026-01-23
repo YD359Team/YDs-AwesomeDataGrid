@@ -827,8 +827,8 @@ namespace YDs_AwesomeDataGrid
         {
             foreach (IGridColumn column in _columns)
             {
-                // checkbox is not inline editor
-                if (column is CheckBoxColumn || column is ImageColumn) continue;
+                // e.g. checkbox & image have not inline editor
+                if (!column.CanUseInlineEditor) continue;
 
                 var editor = column.CreateEditor();
                 editor.Grid = this;

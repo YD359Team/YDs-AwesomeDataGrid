@@ -42,5 +42,4 @@ namespace YDs_AwesomeDataGrid.Columns
             CellStyle = cellStyle;
         }
     }
-
 }

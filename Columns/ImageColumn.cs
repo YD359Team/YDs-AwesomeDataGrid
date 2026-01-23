@@ -7,6 +7,8 @@ namespace YDs_AwesomeDataGrid.Columns
 {
     public class ImageColumn : GridColumn<Bitmap>
     {
+        public override bool CanUseInlineEditor => false;
+
         public ImageColumn(string name, string headerText) : base(name, headerText, false, false)
         {
 

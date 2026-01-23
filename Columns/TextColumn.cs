@@ -7,6 +7,8 @@ namespace YDs_AwesomeDataGrid.Columns
 {
     public class TextColumn : GridColumn<string>
     {
+        public override bool CanUseInlineEditor => true;
+
         public TextColumn(string name, string headerText, bool canEdit, bool canSort) : base(name, headerText, canEdit, canSort)
         {
 

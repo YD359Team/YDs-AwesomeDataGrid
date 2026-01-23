@@ -18,6 +18,8 @@ namespace YDs_AwesomeDataGrid.Columns
 
         bool CanEdit { get; }
         bool CanSort { get; }
+        bool CanUseInlineEditor { get; }
+
 
 #if NET10_0_OR_GREATER
         IInlineEditor? CreateEditor();

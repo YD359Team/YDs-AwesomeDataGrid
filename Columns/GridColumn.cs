@@ -16,6 +16,7 @@ namespace YDs_AwesomeDataGrid.Columns
         public virtual string HeaderText { get; }
         public virtual bool CanEdit { get; }
         public virtual bool CanSort { get; }
+        public virtual bool CanUseInlineEditor { get; }
 
         protected GridColumn(string name, string headerText, bool canEdit, bool canSort)
         {

@@ -7,6 +7,8 @@ namespace YDs_AwesomeDataGrid.Columns
 {
     public class CheckBoxColumn : GridColumn<bool>
     {
+        public override bool CanUseInlineEditor => false;
+
         public CheckBoxColumn(string name, string headerText, bool canEdit, bool canSort) : base(name, headerText, canEdit, canSort)
         {
 

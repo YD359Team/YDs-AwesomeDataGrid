@@ -7,6 +7,8 @@ namespace YDs_AwesomeDataGrid.Columns
 {
     public class DateTimeColumn : GridColumn<DateTime>
     {
+        public override bool CanUseInlineEditor => true;
+
         public DateTimeColumn(string name, string headerText, bool canEdit, bool canSort) : base(name, headerText, canEdit, canSort)
         {
 

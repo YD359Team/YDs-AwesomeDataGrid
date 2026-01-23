@@ -8,6 +8,8 @@ namespace YDs_AwesomeDataGrid.Columns
 {
     public class IntColumn : GridColumn<int>
     {
+        public override bool CanUseInlineEditor => false;
+
         public IntColumn(string name, string headerText, bool canEdit, bool canSort) : base(name, headerText, canEdit, canSort)
         {
 

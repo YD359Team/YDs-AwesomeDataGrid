@@ -9,6 +9,8 @@ namespace YDs_AwesomeDataGrid.Columns
 {
     public class ComboBoxColumn<T> : GridColumn<T> where T : struct, Enum
     {
+        public override bool CanUseInlineEditor => true;
+
         private readonly T[] _enumValues;
 
         public ComboBoxColumn(string name, string headerText, bool canEdit, bool canSort) : base(name, headerText, canEdit, canSort)
