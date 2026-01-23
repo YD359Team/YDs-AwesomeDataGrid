@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using YDs_AwesomeDataGrid.Enums;
+using YDs_AwesomeDataGrid.Styles;
 
 namespace YDs_AwesomeDataGrid.Columns
 {
@@ -16,7 +17,8 @@ namespace YDs_AwesomeDataGrid.Columns
         public bool IsSorted { get; }
         public ADGSortingDirection SortDirection { get; }
 
-        public CellStyle Style { get; }
+        public GridStyle GridStyle { get; }
+        public CellStyle CellStyle { get; }
 
         public HeaderContext(
             int columnIndex,
@@ -26,7 +28,8 @@ namespace YDs_AwesomeDataGrid.Columns
             bool isPressed,
             bool isSorted,
             ADGSortingDirection sortDirection,
-            CellStyle style)
+            GridStyle gridStyle,
+            CellStyle cellStyle)
         {
             ColumnIndex = columnIndex;
             Bounds = bounds;
@@ -35,7 +38,8 @@ namespace YDs_AwesomeDataGrid.Columns
             IsPressed = isPressed;
             IsSorted = isSorted;
             SortDirection = sortDirection;
-            Style = style;
+            GridStyle = gridStyle;
+            CellStyle = cellStyle;
         }
     }
 

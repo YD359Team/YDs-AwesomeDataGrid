@@ -10,6 +10,7 @@ using System.Linq;
 using YDs_AwesomeDataGrid.Managers;
 using YDs_AwesomeDataGrid.Columns;
 using YDs_AwesomeDataGrid.Extensions;
+using YDs_AwesomeDataGrid.Styles;
 
 namespace YDs_AwesomeDataGrid
 {
@@ -31,6 +32,24 @@ namespace YDs_AwesomeDataGrid
             {
                 _font = value;
                 base.Font = _font;
+                Invalidate();
+            }
+        }
+        #endregion
+
+        #region Styles
+        private ADGGridThemes _gridTheme = ADGGridThemes.Custom;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+        public ADGGridThemes GridTheme
+        {
+            get => _gridTheme;
+            set
+            {
+                _gridTheme = value;
+                if (_gridTheme == ADGGridThemes.Light)
+                    _gridStyle = PredefinedGridStyles.Light;
+                else if (_gridTheme == ADGGridThemes.Dark)
+                    _gridStyle = PredefinedGridStyles.Dark;   
                 Invalidate();
             }
         }
@@ -165,12 +184,10 @@ namespace YDs_AwesomeDataGrid
         #endregion
 
         #region Graphics
-        private readonly Brush _maskBrush = new SolidBrush(Color.FromArgb(100, Color.DarkGray));
-        private readonly Pen _selectedBorderPen = new Pen(SystemColors.HighlightText, 1f);
-        private readonly Pen _hoveredBorderPen = new Pen(Color.DeepSkyBlue, 1f);
         #endregion
 
         #region Styles
+        private GridStyle _gridStyle = PredefinedGridStyles.Light;
         private readonly CellStyle _defaultCellStyle = new CellStyle()
         {
              Font = FontManager.ModernCommon
@@ -249,6 +266,17 @@ namespace YDs_AwesomeDataGrid
             UpdateScrollThumbs();
             Invalidate();
         }
+
+        /// <summary>
+        /// Applies a custom style to the grid using the specified style settings.
+        /// </summary>
+        /// <param name="gridStyle">The style settings to apply to the grid. Cannot be null.</param>
+        public void SetCustomStyle(GridStyle gridStyle)
+        {
+            _gridStyle = gridStyle ?? throw new ArgumentNullException(nameof(gridStyle));
+            _gridTheme = ADGGridThemes.Custom;
+            Invalidate();
+        }
         #endregion
 
         #region ControlOverrides
@@ -264,7 +292,7 @@ namespace YDs_AwesomeDataGrid
         {
             e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            e.Graphics.FillRectangle(SystemBrushes.ControlDark, this.ClientRectangle);
+            e.Graphics.FillRectangle(_gridStyle.BackgroundBrush, this.ClientRectangle);
 
             if (DataProvider == EmptyProvider)
                 return;
@@ -1018,12 +1046,12 @@ namespace YDs_AwesomeDataGrid
         #region Paint
         private void DrawBorder(Graphics g)
         {
-            g.DrawRectangle(Pens.Black, 0, 0, this.Width - 1, this.Height - 1);
+            g.DrawRectangle(_gridStyle.GridBorderPen, 0, 0, this.Width - 1, this.Height - 1);
         }
 
         private void DrawMask(Graphics g)
         {
-            g.FillRectangle(_maskBrush, this.ClientRectangle);
+            g.FillRectangle(_gridStyle.EditMaskBrush, this.ClientRectangle);
         }
 
         private void DrawScrollBars(Graphics g)
@@ -1031,9 +1059,9 @@ namespace YDs_AwesomeDataGrid
             if (_needVertScroll)
             {
                 g.SetClip(_layout.VertScrollRect);
-                g.FillRectangle(Brushes.Gainsboro, _layout.VertScrollRect);
+                g.FillRectangle(_gridStyle.ScrollBarBackground, _layout.VertScrollRect);
 
-                g.FillRectangle(SystemBrushes.ControlDarkDark, _scrollBarData.VertThumb);
+                g.FillRectangle(_gridStyle.ScrollBarThumb, _scrollBarData.VertThumb);
 
                 g.ResetClip();
             }
@@ -1041,9 +1069,9 @@ namespace YDs_AwesomeDataGrid
             if (_needHorScroll)
             {
                 g.SetClip(_layout.HorScrollRect);
-                g.FillRectangle(Brushes.Gainsboro, _layout.HorScrollRect);
+                g.FillRectangle(_gridStyle.ScrollBarBackground, _layout.HorScrollRect);
 
-                g.FillRectangle(SystemBrushes.ControlDarkDark, _scrollBarData.HorThumb);
+                g.FillRectangle(_gridStyle.ScrollBarThumb, _scrollBarData.HorThumb);
 
                 g.ResetClip();
             }
@@ -1094,6 +1122,7 @@ namespace YDs_AwesomeDataGrid
                         visual.Text,
                         isSelected,
                         isHovered,
+                        _gridStyle,
                         _defaultCellStyle
                     );
 
@@ -1116,7 +1145,7 @@ namespace YDs_AwesomeDataGrid
             x = Math.Min(x, _layout.GridRect.Right);
 
             g.DrawLine(
-                SystemPens.ControlDark,
+                _gridStyle.GridBorderPen,
                 x - 1,
                 _layout.GridRect.Y,
                 x - 1,
@@ -1127,7 +1156,7 @@ namespace YDs_AwesomeDataGrid
         private void DrawColumnHeaders(Graphics g)
         {
             g.FillRectangle(
-                Brushes.LightGray,
+                _gridStyle.HeaderBackgroundBrush,
                 _layout.HeaderRect
             );
 
@@ -1153,6 +1182,7 @@ namespace YDs_AwesomeDataGrid
                     col == _pressedHeaderCol,
                     _sortedColumnName == column.Name,
                     _sortedColumnName == column.Name ? _sortingDirection : ADGSortingDirection.None,
+                    _gridStyle,
                     _defaultColHeaderStyle
                 );
 
@@ -1160,7 +1190,7 @@ namespace YDs_AwesomeDataGrid
             }
 
             g.DrawLine(
-                SystemPens.InactiveBorder,
+                _gridStyle.CellBorderPen,
                 _layout.HeaderRect.Left,
                 _layout.HeaderRect.Bottom - 1,
                 _layout.HeaderRect.Right,
@@ -1183,18 +1213,18 @@ namespace YDs_AwesomeDataGrid
                 bool selected = row == _selectedRow;
                 bool hot = row == _hotRow;
 
-                g.FillRectangle((selected ? SystemBrushes.Highlight :
-                    hot ? Brushes.LightGray :
-                    SystemBrushes.Control), r);
+                g.FillRectangle((selected ? _gridStyle.HeaderBackgroundPressedBrush :
+                    hot ? _gridStyle.HeaderBackgroundHoverBrush :
+                    _gridStyle.HeaderBackgroundBrush), r);
 
-                ControlPaint.DrawBorder(g, r, SystemColors.ControlDark, ButtonBorderStyle.Solid);
+                ControlPaint.DrawBorder(g, r, _gridStyle.CellBorderPen.Color, ButtonBorderStyle.Solid);
 
                 TextRenderer.DrawText(
                     g,
                     (row + 1).ToString(),
                     Font,
                     r,
-                    selected ? SystemColors.HighlightText : SystemColors.ControlText,
+                    selected ? _gridStyle.HighlightedTextBrush.Color : _gridStyle.TextBrush.Color,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
                 );
             }
@@ -1240,9 +1270,6 @@ namespace YDs_AwesomeDataGrid
             try
             {
                 // cant disposing brushes from SystemBrushes. etc
-                _maskBrush?.Dispose();
-                _hoveredBorderPen?.Dispose();
-                _selectedBorderPen?.Dispose();
             }
             finally
             {
@@ -1251,5 +1278,4 @@ namespace YDs_AwesomeDataGrid
         }
         #endregion
     }
-
 }

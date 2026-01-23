@@ -24,36 +24,36 @@ namespace YDs_AwesomeDataGrid.Helpers
         {
             if (ctx.IsSelected)
             {
-                g.FillRectangle(Brushes.LightSkyBlue, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundSelectedBrush, ctx.Bounds);
             }
             else if (ctx.IsHovered)
             {
-                g.FillRectangle(Brushes.LightCyan, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundHoverBrush, ctx.Bounds);
             }
             else
             {
-                g.FillRectangle(SystemBrushes.ControlLightLight, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundBrush, ctx.Bounds);
             }
 
             string text = ctx.Pres ?? string.Empty;
-            g.DrawString(text, ctx.Style.Font, Brushes.Black, ctx.Bounds, DefaultStringFormat);
+            g.DrawString(text, ctx.CellStyle.Font, ctx.GridStyle.TextBrush, ctx.Bounds, DefaultStringFormat);
             
-            g.DrawRectangle(Pens.DarkGray, ctx.Bounds);
+            g.DrawRectangle(ctx.GridStyle.CellBorderPen, ctx.Bounds);
         }
 
         public static void DrawCheckBoxCell(Graphics g, CellContext ctx)
         {
             if (ctx.IsSelected)
             {
-                g.FillRectangle(Brushes.LightSkyBlue, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundSelectedBrush, ctx.Bounds);
             }
             else if (ctx.IsHovered)
             {
-                g.FillRectangle(Brushes.LightCyan, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundHoverBrush, ctx.Bounds);
             }
             else
             {
-                g.FillRectangle(SystemBrushes.ControlLightLight, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundBrush, ctx.Bounds);
             }
 
             Rectangle bounds = ctx.Bounds;
@@ -77,15 +77,15 @@ namespace YDs_AwesomeDataGrid.Helpers
         {
             if (ctx.IsSelected)
             {
-                g.FillRectangle(Brushes.LightSkyBlue, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundSelectedBrush, ctx.Bounds);
             }
             else if (ctx.IsHovered)
             {
-                g.FillRectangle(Brushes.LightCyan, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundHoverBrush, ctx.Bounds);
             }
             else
             {
-                g.FillRectangle(SystemBrushes.ControlLightLight, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.CellBackgroundBrush, ctx.Bounds);
             }
 
             if (ctx.Value is Bitmap)
@@ -104,11 +104,11 @@ namespace YDs_AwesomeDataGrid.Helpers
         {
             // background
             if (ctx.IsPressed)
-                g.FillRectangle(Brushes.DarkGray, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.HeaderBackgroundPressedBrush, ctx.Bounds);
             else if (ctx.IsHovered)
-                g.FillRectangle(Brushes.LightGray, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.HeaderBackgroundHoverBrush, ctx.Bounds);
             else
-                g.FillRectangle(Brushes.Gainsboro, ctx.Bounds);
+                g.FillRectangle(ctx.GridStyle.HeaderBackgroundBrush, ctx.Bounds);
 
             // text + sort icon
             string text = ctx.Text;
@@ -118,8 +118,8 @@ namespace YDs_AwesomeDataGrid.Helpers
             GraphicsHelper.DrawString(
                 g,
                 text,
-                ctx.Style.Font,
-                Brushes.Black,
+                ctx.CellStyle.Font,
+                ctx.GridStyle.TextBrush,
                 ctx.Bounds
             );
 

@@ -1,27 +1,24 @@
 ﻿using System.Drawing;
+using YDs_AwesomeDataGrid.Styles;
 
 namespace YDs_AwesomeDataGrid.Columns
 {
     public readonly struct CellContext
     {
-        // Позиция
         public int Row { get; }
         public int ColumnIndex { get; }
 
-        // Геометрия
         public Rectangle Bounds { get; }
         public Rectangle ContentBounds { get; }
 
-        // Данные
         public object Value { get; }
         public string Pres { get; }
 
-        // Состояние
         public bool IsSelected { get; }
         public bool IsHovered { get; }
 
-        // Стиль
-        public CellStyle Style { get; }
+        public GridStyle GridStyle { get; }
+        public CellStyle CellStyle { get; }
 
         public CellContext(
             int row,
@@ -32,7 +29,8 @@ namespace YDs_AwesomeDataGrid.Columns
             string pres,
             bool isSelected,
             bool isHovered,
-            CellStyle style)
+            GridStyle gridStyle,
+            CellStyle cellStyle)
         {
             Row = row;
             ColumnIndex = columnIndex;
@@ -42,7 +40,8 @@ namespace YDs_AwesomeDataGrid.Columns
             Pres = pres;
             IsSelected = isSelected;
             IsHovered = isHovered;
-            Style = style;
+            GridStyle = gridStyle;
+            CellStyle = cellStyle;
         }
     }
 }
