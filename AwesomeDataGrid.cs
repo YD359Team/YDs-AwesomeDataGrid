@@ -1196,7 +1196,6 @@ namespace YDs_AwesomeDataGrid
             );
         }
 
-
         private void DrawRowHeaders(Graphics g, int firstVisibleRow)
         {
             if (!IsRowHeaderVisible)

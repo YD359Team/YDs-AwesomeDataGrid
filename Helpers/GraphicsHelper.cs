@@ -88,9 +88,10 @@ namespace YDs_AwesomeDataGrid.Helpers
                 g.FillRectangle(ctx.GridStyle.CellBackgroundBrush, ctx.Bounds);
             }
 
-            if (ctx.Value is Bitmap)
+            if (ctx.Value is Bitmap bmp)
             {
-                g.DrawImage((Bitmap)ctx.Value, ctx.Bounds.Location.X + (ctx.Bounds.Location.X / 2) - ImageSize.Width, ctx.Bounds.Location.Y, ImageSize.Width, ImageSize.Height);
+                g.DrawImage(bmp, ctx.Bounds.Location.X + (ctx.Bounds.Location.X / 2) - ImageSize.Width, 
+                    ctx.Bounds.Location.Y, ImageSize.Width, ImageSize.Height);
             }
             else
             {

@@ -1,8 +1,9 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 
 namespace YDs_AwesomeDataGrid.Styles
 {
-    public class GridStyle
+    public class GridStyle : IDisposable
     {
         public readonly SolidBrush BackgroundBrush;
         public readonly Pen GridBorderPen;
@@ -43,6 +44,33 @@ namespace YDs_AwesomeDataGrid.Styles
             HighlightedTextBrush = highlightedTextBrush;
             ScrollBarBackground = scrollBarBackground;
             ScrollBarThumb = scrollBarThumb;
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                this.BackgroundBrush?.Dispose();
+                this.GridBorderPen?.Dispose();
+                this.EditMaskBrush?.Dispose();
+                this.CellBorderPen?.Dispose();
+                this.CellBorderHoverPen?.Dispose();
+                this.CellBorderSelectedPen?.Dispose();
+                this.CellBackgroundBrush?.Dispose();
+                this.CellBackgroundHoverBrush?.Dispose();
+                this.CellBackgroundSelectedBrush?.Dispose();
+                this.HeaderBackgroundBrush?.Dispose();
+                this.HeaderBackgroundHoverBrush?.Dispose();
+                this.HeaderBackgroundPressedBrush?.Dispose();
+                this.TextBrush?.Dispose();
+                this.HighlightedTextBrush?.Dispose();
+                this.ScrollBarBackground?.Dispose();
+                this.ScrollBarThumb?.Dispose();
+            }
+            catch
+            {
+                // do nothing
+            }
         }
     }
 }

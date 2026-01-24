@@ -11,7 +11,7 @@ namespace YDs_AwesomeDataGrid.Columns
 
         public TextColumn(string name, string headerText, bool canEdit, bool canSort) : base(name, headerText, canEdit, canSort)
         {
-
+            // do nothing
         }
 
 #if NET10_0_OR_GREATER
