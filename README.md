@@ -16,14 +16,13 @@ Simple and faster DataGridView without dependencies
 - ✅ Latest .NET (10) and .NET Framework (4.8.1) support
 - ✅ Simple CSV Data provider for easy tables
 - ✅ Light, Dark and custom theme support
+- ✅ Export to CSV
 - ✅ Always free
 
 ## What's under developing now (TODOs)
 
 1. Multiselect
-2. Export data to file
-3. Customization for cells, rows and columns 
-4. Public properties and styles for grid customization
+2. Customization for cells, rows and columns
 
 ## GetStarted
 

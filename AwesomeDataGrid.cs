@@ -183,9 +183,6 @@ namespace YDs_AwesomeDataGrid
         private readonly DragThumb _dragThumb = new DragThumb(); 
         #endregion
 
-        #region Graphics
-        #endregion
-
         #region Styles
         private GridStyle _gridStyle = PredefinedGridStyles.Light;
         private readonly CellStyle _defaultCellStyle = CellStyle.DefaultCell;
@@ -253,7 +250,7 @@ namespace YDs_AwesomeDataGrid
         /// <remarks>After calling this method, the grid will be empty and any cached cell data will be
         /// invalidated. This method also updates the scrollbars and refreshes the display to reflect the cleared
         /// state.</remarks>
-        public void Clear()
+        public void ClearRows()
         {
             this.RowCount = 0;
             _cellCache.InvalidateAll();
@@ -270,6 +267,11 @@ namespace YDs_AwesomeDataGrid
             _gridStyle = gridStyle ?? throw new ArgumentNullException(nameof(gridStyle));
             _gridTheme = ADGGridThemes.Custom;
             Invalidate();
+        }
+
+        public void ExportToCsv(string fullPathToCsv)
+        {
+            DataExporter.ExportToCsv(this.DataProvider, _columns, fullPathToCsv);
         }
         #endregion
 
@@ -289,7 +291,10 @@ namespace YDs_AwesomeDataGrid
             e.Graphics.FillRectangle(_gridStyle.BackgroundBrush, this.ClientRectangle);
 
             if (DataProvider == EmptyProvider)
+            {
+                DrawBorder(e.Graphics);
                 return;
+            }
 
             DrawRowHeaders(e.Graphics, _viewPort.FirstVisibleRow);
             DrawColumnHeaders(e.Graphics);
