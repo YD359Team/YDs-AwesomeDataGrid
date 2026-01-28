@@ -5,24 +5,24 @@ using System.Windows.Forms;
 
 namespace YDs_AwesomeDataGrid
 {
-    internal class InlineFloat32Editor : IInlineEditor
+    internal class InlineDecimalEditor : IInlineEditor
     {
         public event Action OnLostFocus;
         public event Action<IInlineEditor> OnEndEdit;
 
         public Control Grid { get; set; }
-        public Type ColumnType => typeof(float);
+        public Type ColumnType => typeof(decimal);
         public Control Editor { get; private set; }
         public object Value { get; private set; }
 
-        public InlineFloat32Editor()
+        public InlineDecimalEditor()
         {
             this.Editor = new NumericUpDown()
             {
                 BorderStyle = BorderStyle.FixedSingle,
                 DecimalPlaces = 2,
-                Minimum = Convert.ToDecimal(decimal.MinValue),
-                Maximum = Convert.ToDecimal(decimal.MaxValue),
+                Minimum = decimal.MinValue,
+                Maximum = decimal.MaxValue,
             };
             this.Editor.Leave += Editor_LostFocus;
             this.Editor.KeyDown += Editor_KeyDown;
@@ -78,7 +78,7 @@ namespace YDs_AwesomeDataGrid
             this.Editor.Font = this.Grid.Font;
             if (cellValue != null)
             {
-                ((NumericUpDown)this.Editor).Value = Convert.ToDecimal((float)cellValue);
+                ((NumericUpDown)this.Editor).Value = (decimal)cellValue;
             }
             this.Grid.Controls.Add(this.Editor);
             this.Editor.Visible = true;

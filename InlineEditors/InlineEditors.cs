@@ -12,6 +12,7 @@ namespace YDs_AwesomeDataGrid.InlineEditors
             if (type.IsEnum) return new InlineEnumEditor(Enum.GetValues(type).Cast<object>().ToArray());
             if (type == typeof(int)) return new InlineInt32Editor();
             if (type == typeof(float)) return new InlineFloat32Editor();
+            if (type == typeof(decimal)) return new InlineDecimalEditor();
             if (type == typeof(DateTime)) return new InlineDateTimeEditor();
             return new InlineTextEditor();
         }
