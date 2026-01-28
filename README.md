@@ -2,7 +2,9 @@
 
 ![Preview](Preview.jpg)
 
-Simple and faster DataGridView without dependencies
+Welcome to **Awesome Data Grid** - simple and faster `DataGridView` without dependencies for Windows Forms.
+
+## Features
 
 - ✅ Just Control-based class with GDI+ rendering, no magic
 - ✅ Small sized control without overhead
