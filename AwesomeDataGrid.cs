@@ -11,6 +11,10 @@ using YDs_AwesomeDataGrid.Managers;
 using YDs_AwesomeDataGrid.Columns;
 using YDs_AwesomeDataGrid.Extensions;
 using YDs_AwesomeDataGrid.Styles;
+using YDs_AwesomeDataGrid.Selection;
+using System.Threading;
+using System.Threading.Tasks;
+using YDs_AwesomeDataGrid.ScrollBars;
 
 namespace YDs_AwesomeDataGrid
 {
@@ -70,7 +74,6 @@ namespace YDs_AwesomeDataGrid
         public int RowCount { get; private set; }
 
         private ADGSelectionTypes _selectionType = ADGSelectionTypes.Cell;
-
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public ADGSelectionTypes SelectionType
         {
@@ -82,8 +85,19 @@ namespace YDs_AwesomeDataGrid
             }
         }
 
-        private bool _isRowHeaderVisible = true;
+        private bool _isMultiselectEnabled = false;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+        public bool IsMultiselectEnabled
+        {
+            get => _isMultiselectEnabled;
+            set
+            {
+                _isMultiselectEnabled = value;
+                Invalidate();
+            }
+        }
 
+        private bool _isRowHeaderVisible = true;
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public bool IsRowHeaderVisible
         {
@@ -98,6 +112,7 @@ namespace YDs_AwesomeDataGrid
 
         #region Data
         private static readonly EmptyDataProvider EmptyProvider = new EmptyDataProvider();
+        private IDataProvider _dataProvider;
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public IDataProvider DataProvider
         {
@@ -121,7 +136,6 @@ namespace YDs_AwesomeDataGrid
                 }
             }
         }
-        private IDataProvider _dataProvider;
         #endregion
         #endregion
 
@@ -138,8 +152,16 @@ namespace YDs_AwesomeDataGrid
 
         private readonly ViewPort _viewPort = new ViewPort();
         private readonly ScrollBarData _scrollBarData = new ScrollBarData();
-        private readonly Selector _selector = new Selector();
-        private readonly HoverSelector _hoverSelector = new HoverSelector();
+
+        #region Selection and Hovered
+        private ISelector Selector => _selectionController.Selector;
+        private readonly SelectionController _selectionController = new SelectionController();
+        private CellSelector _hoverSelector = new CellSelector();
+        private int _hoverRow = -1;
+        private int _hoverCol = -1;
+        private CellKey _activeCell = new CellKey(0, 0);
+        #endregion
+
         private GridInnerState _gridInnerState;
         private bool _needVertScroll;
         private bool _needHorScroll;
@@ -149,7 +171,6 @@ namespace YDs_AwesomeDataGrid
 
         // состояние
         private int _hotRow = -1;
-        private int _selectedRow = -1;
 
         private IGridColumn[] _columns = Array.Empty<IGridColumn>();
         private const int HeaderResizeGripWidth = 4;
@@ -273,6 +294,11 @@ namespace YDs_AwesomeDataGrid
         {
             DataExporter.ExportToCsv(this.DataProvider, _columns, fullPathToCsv);
         }
+
+        public async Task ExportToCsvAsync(string fullPathToCsv, CancellationToken token)
+        {
+            await DataExporter.ExportToCsvAsync(this.DataProvider, _columns, fullPathToCsv, token);
+        }
         #endregion
 
         #region ControlOverrides
@@ -348,31 +374,31 @@ namespace YDs_AwesomeDataGrid
                 }
 
                 // Toggle selection visibility
-                _selector.IsVisible = !_selector.IsVisible;
-                SmartInvalidate(GetCellRect(_selector.Row, _selector.Column));
+                Selector.IsVisible = !Selector.IsVisible;
+                SmartInvalidate(GetCellRect(_activeCell.Row, _activeCell.Column));
             }
             // Space or Enter
             if (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter)
             {
-                if (!_selector.IsVisible) return;
+                if (!_selectionController.Selector.IsVisible) return;
 
-                int col = _selector.Column;
+                int col = _activeCell.Column;
                 if (col < 0 || col >= ColumnCount) return;
                 if (!_columns[col].CanEdit) return;
 
-                int row = _selector.Row;
+                int row = _activeCell.Row;
                 RequestCellEditing(row, col);
             }
             // Del
             else if (e.KeyCode == Keys.Delete)
             {
-                if (!_selector.IsVisible) return;
+                if (!_selectionController.Selector.IsVisible) return;
 
-                int col = _selector.Column;
+                int col = _activeCell.Column;
                 if (col < 0 || col >= ColumnCount) return;
                 if (!_columns[col].CanEdit) return;
 
-                int row = _selector.Row;
+                int row = _activeCell.Row;
                 this.DataProvider.SetData(row, col, GetDefaultValueForColumn(_columns[col]));
                 InvalidateCellCache(row, col);
                 SmartInvalidate(GetCellRect(row, col));
@@ -380,17 +406,19 @@ namespace YDs_AwesomeDataGrid
             // Ctrl+C
             else if (e.KeyCode == Keys.C && e.Modifiers == Keys.Control)
             {
-                if (!_selector.IsVisible) return;
-                int row = _selector.Row;
-                int col = _selector.Column;
+                if (!_selectionController.Selector.IsVisible) return;
+
+                int row = _activeCell.Row;
+                int col = _activeCell.Column;
                 Clipboard.SetText(_columns[col].Format(this.DataProvider.GetData(row, col)));
             }
             // Ctrl+V
             else if (e.KeyCode == Keys.V && e.Modifiers == Keys.Control)
             {
-                if (!_selector.IsVisible) return;
-                int row = _selector.Row;
-                int col = _selector.Column;
+                if (!_selectionController.Selector.IsVisible) return;
+
+                int row = _activeCell.Row;
+                int col = _activeCell.Column;
                 if (!_columns[col].CanEdit) return;
                 string clipboardText = Clipboard.GetText();
 #if NET10_0_OR_GREATER
@@ -423,10 +451,11 @@ namespace YDs_AwesomeDataGrid
                 SmartInvalidate(GetCellRect(row, col));
             }
             // arrows
-            else if (e.KeyCode == Keys.Down || e.KeyCode == Keys.Up || e.KeyCode == Keys.Right || e.KeyCode == Keys.Left)
+            else if (e.KeyCode == Keys.Down || e.KeyCode == Keys.Up ||
+                     e.KeyCode == Keys.Right || e.KeyCode == Keys.Left)
             {
-                int newRow = _selector.Row;
-                int newCol = _selector.Column;
+                int newRow = _activeCell.Row;
+                int newCol = _activeCell.Column;
 
                 switch (e.KeyCode)
                 {
@@ -436,13 +465,16 @@ namespace YDs_AwesomeDataGrid
                     case Keys.Left: newCol--; break;
                 }
 
-                MoveTo(newRow, newCol);
+                if (!IsMultiselectEnabled)
+                    MoveTo(newRow, newCol);
+                else
+                    _activeCell = new CellKey(newRow, newCol);
             }
             // pgup pgdn
             else if (e.KeyCode == Keys.PageDown || e.KeyCode == Keys.PageUp)
             {
-                int newRow = _selector.Row;
-                int newCol = _selector.Column;
+                int newRow = _activeCell.Row;
+                int newCol = _activeCell.Column;
 
                 switch (e.KeyCode)
                 {
@@ -450,7 +482,10 @@ namespace YDs_AwesomeDataGrid
                     case Keys.PageUp: newRow -= 10; break;
                 }
 
-                MoveTo(newRow, newCol);
+                if (!IsMultiselectEnabled)
+                    MoveTo(newRow, newCol);
+                else
+                    _activeCell = new CellKey(newRow, newCol);
             }
         }
 
@@ -467,7 +502,7 @@ namespace YDs_AwesomeDataGrid
             _isScrollVertHovered = false;
             _isScrollHorHovered = false;
             _hoverState = HoverStates.None;
-            SmartInvalidate(GetCellRect(_selector.Row, _selector.Column));
+            SmartInvalidate(GetCellRect(_activeCell.Row, _activeCell.Column));
             SmartInvalidate(_layout.VertScrollRect);
             SmartInvalidate(_layout.HorScrollRect);
         }
@@ -567,8 +602,8 @@ namespace YDs_AwesomeDataGrid
             _isScrollVertHovered = false;
             _isScrollHorHovered = false;
 
-            int lastHoveredRow = _hoverSelector.Row;
-            int lastHoveredCol = _hoverSelector.Column;
+            int oldHoverRow = _hoverRow;
+            int oldHoverCol = _hoverCol;
 
             if (TryGetColumnHeaderByPoint(e.Location, out col))
             {
@@ -589,21 +624,39 @@ namespace YDs_AwesomeDataGrid
                 _hoveredHeaderCol = -1;
             }
 
-            if (_layout.GridRect.IntersectsWith(mouseRect) && TryGetCellByPoint(e.Location, out int row, out col))
+            if (_layout.GridRect.IntersectsWith(mouseRect) &&
+                TryGetCellByPoint(e.Location, out int row, out col))
             {
-                if (_hoverState == HoverStates.Cell && lastHoveredCol == col && lastHoveredRow == row) return;
+                if (_hoverRow != row || _hoverCol != col)
+                {
+                    _hoverRow = row;
+                    _hoverCol = col;
+                    _hoverSelector.Row = row;
+                    _hoverSelector.Column = col;
+                    _hoverSelector.IsVisible = true;
 
-                _hoverSelector.Row = row;
-                _hoverSelector.Column = col;
-                _hoverSelector.IsVisible = true;
+                    if (oldHoverRow >= 0 && oldHoverCol >= 0)
+                        SmartInvalidate(GetCellRect(oldHoverRow, oldHoverCol));
+
+                    SmartInvalidate(GetCellRect(row, col));
+                }
+
                 _hoverState = HoverStates.Cell;
-                SmartInvalidate(GetCellRect(row, col));
             }
             else
             {
-                _hoverSelector.IsVisible = false;
+                if (_hoverSelector.IsVisible)
+                {
+                    _hoverSelector.IsVisible = false;
+
+                    if (_hoverRow >= 0 && _hoverCol >= 0)
+                        SmartInvalidate(GetCellRect(_hoverRow, _hoverCol));
+
+                    _hoverRow = -1;
+                    _hoverCol = -1;
+                }
             }
-            SmartInvalidate(GetCellRect(lastHoveredRow, lastHoveredCol));
+            SmartInvalidate(GetCellRect(oldHoverRow, oldHoverRow));
             SmartInvalidate(_layout.VertScrollRect);
             SmartInvalidate(_layout.HorScrollRect);
         }
@@ -669,20 +722,17 @@ namespace YDs_AwesomeDataGrid
                 UpdateVisibleCells();
                 Invalidate();
             }
-            // find cell by point
-            else if (isInGrid && TryGetCellByPoint(e.Location, out int row, out col))
+            // find row header by point
+            else if (IsRowHeaderVisible && TryGetRowHeaderByPoint(e.Location, out int row))
             {
-                int oldRow = _selector.Row;
-                int oldCol = _selector.Column;
-
-                _selector.Row = row;
-                _selector.Column = col;
-                _selector.IsVisible = true;
-
-                EnsureSelectionVisible();
-
-                SmartInvalidate(GetCellRect(oldRow, oldCol));
-                SmartInvalidate(GetCellRect(row, col));
+                _selectionController.SelectRow(row);
+                _activeCell = new CellKey(row, 0);
+                Invalidate();
+            }
+            // find cell by point
+            else if (isInGrid && TryGetCellByPoint(e.Location, out row, out col))
+            {
+                OnCellMouseDown(row, col, e.Button, ModifierKeys);
             }
 
             if (!this.Focused) Focus();
@@ -726,7 +776,7 @@ namespace YDs_AwesomeDataGrid
             {
                 SetData(row, col, !(bool)GetData(row, col));
                 UpdateVisibleCells();
-                SmartInvalidate(GetCellRect(_selector.Row, _selector.Column));
+                SmartInvalidate(GetCellRect(_activeCell.Row, _activeCell.Column));
                 return;
             }
 
@@ -867,6 +917,22 @@ namespace YDs_AwesomeDataGrid
             );
         }
 
+        private bool TryGetRowHeaderByPoint(Point p, out int row)
+        {
+            row = -1;
+
+            if (!IsRowHeaderVisible)
+                return false;
+
+            if (!_layout.RowHeaderRect.Contains(p))
+                return false;
+
+            int relativeY = p.Y - _layout.RowHeaderRect.Y;
+            row = _viewPort.FirstVisibleRow + (relativeY / _layout.RowHeight);
+
+            return row >= 0 && row < RowCount;
+        }
+
         private Rectangle GetHeaderRect(int col)
         {
             return _layout.GetHeaderRect(col, _viewPort.FirstVisibleColumn);
@@ -897,6 +963,34 @@ namespace YDs_AwesomeDataGrid
                 _scrollBarData
             );
         }
+
+        private void OnCellMouseDown(int row, int col, MouseButtons button, Keys modifiers)
+        {
+            _activeCell = new CellKey(row, col);
+
+            if (!IsMultiselectEnabled)
+            {
+                _selectionController.SelectCell(row, col);
+                Invalidate();
+                return;
+            }
+
+            if ((modifiers & Keys.Shift) == Keys.Shift)
+            {
+                _selectionController.ShiftSelectCell(row, col);
+            }
+            else if ((modifiers & Keys.Control) == Keys.Control)
+            {
+                _selectionController.CtrlSelectCell(row, col);
+            }
+            else
+            {
+                _selectionController.SelectCell(row, col);
+            }
+
+            Invalidate();
+        }
+
 
         #region CellCache
         // visible cell cache
@@ -949,29 +1043,29 @@ namespace YDs_AwesomeDataGrid
         }
         #endregion
 
-        private void EnsureSelectionVisible()
+        private void EnsureSelectionVisible(CellKey cell)
         {
             bool updated = false;
 
-            if (_selector.Row < _viewPort.FirstVisibleRow)
+            if (cell.Row < _viewPort.FirstVisibleRow)
             {
-                _viewPort.FirstVisibleRow = _selector.Row;
+                _viewPort.FirstVisibleRow = cell.Row;
                 updated = true;
             }
-            else if (_selector.Row >= _viewPort.FirstVisibleRow + _layout.VisibleRowCount)
+            else if (cell.Row >= _viewPort.FirstVisibleRow + _layout.VisibleRowCount)
             {
-                _viewPort.FirstVisibleRow = _selector.Row - _layout.VisibleRowCount + 1;
+                _viewPort.FirstVisibleRow = cell.Row - _layout.VisibleRowCount + 1;
                 updated = true;
             }
 
-            if (_selector.Column < _viewPort.FirstVisibleColumn)
+            if (cell.Column < _viewPort.FirstVisibleColumn)
             {
-                _viewPort.FirstVisibleColumn = _selector.Column;
+                _viewPort.FirstVisibleColumn = cell.Column;
                 updated = true;
             }
-            else if (_selector.Column > LastVisibleColumn)
+            else if (cell.Column > LastVisibleColumn)
             {
-                _viewPort.FirstVisibleColumn = _selector.Column;
+                _viewPort.FirstVisibleColumn = cell.Column;
                 updated = true;
             }
 
@@ -988,30 +1082,15 @@ namespace YDs_AwesomeDataGrid
             row = Math.Max(0, Math.Min(RowCount - 1, row));
             col = Math.Max(0, Math.Min(ColumnCount - 1, col));
 
-            _selector.Row = row;
-            _selector.Column = col;
-            _selector.IsVisible = true;
+            _activeCell = new CellKey(row, col);
+            _selectionController.SelectCell(row, col);
 
-            int firstRow = _viewPort.FirstVisibleRow;
-            int lastRow = firstRow + _layout.VisibleRowCount - 1;
-
-            if (row < firstRow)
-                _viewPort.FirstVisibleRow = row;
-            else if (row > lastRow)
-                _viewPort.FirstVisibleRow = row - _layout.VisibleRowCount + 1;
-
-            int firstCol = _viewPort.FirstVisibleColumn;
-            int lastVisibleCol = LastVisibleColumn;
-
-            if (col < _viewPort.FirstVisibleColumn)
-                _viewPort.FirstVisibleColumn = col;
-            else if (col > lastVisibleCol)
-                _viewPort.FirstVisibleColumn = col;
-
+            EnsureSelectionVisible(_activeCell);
             UpdateVisibleCells();
             UpdateScrollThumbs();
             Invalidate();
         }
+
 
 #if NET10_0_OR_GREATER
         private object? GetDefaultValueForColumn(IGridColumn column)
@@ -1100,10 +1179,9 @@ namespace YDs_AwesomeDataGrid
 
                     var visual = _cellCache.Get(row, col);
 
-                    bool isSelected = _selector.IsVisible &&
-                                      (_selectionType == ADGSelectionTypes.Cell
-                                        ? (_selector.Row == row && _selector.Column == col)
-                                        : (_selector.Row == row));
+                    bool isSelected =
+                        Selector.IsCellSelected(row, col) ||
+                        Selector.IsRowSelected(row);
 
                     bool isHovered =
                         !isSelected &&
@@ -1207,7 +1285,7 @@ namespace YDs_AwesomeDataGrid
             {
                 Rectangle r = GetRowHeaderCellRect(row, firstVisibleRow);
 
-                bool selected = row == _selectedRow;
+                bool selected = Selector.IsRowSelected(row);
                 bool hot = row == _hotRow;
 
                 g.FillRectangle((selected ? _gridStyle.HeaderBackgroundPressedBrush :

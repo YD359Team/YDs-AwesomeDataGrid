@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Drawing;
 using YDs_AwesomeDataGrid.Helpers;
+using YDs_AwesomeDataGrid.Managers;
 
-namespace YDs_AwesomeDataGrid.Managers
+namespace YDs_AwesomeDataGrid.ScrollBars
 {
     internal sealed class ScrollManager
     {

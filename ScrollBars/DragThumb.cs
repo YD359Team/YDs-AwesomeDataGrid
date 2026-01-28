@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
 
-namespace YDs_AwesomeDataGrid.Managers
+namespace YDs_AwesomeDataGrid.ScrollBars
 {
     internal class DragThumb
     {
