@@ -23,8 +23,10 @@ Welcome to **Awesome Data Grid** - simple and faster `DataGridView` without depe
 
 ## What's under developing now (TODOs)
 
-1. Multiselect
+1. Selected cells\rows properties
 2. Customization for cells, rows and columns
+3. Reflection DataProvider and\or DataSource as analog
+4. DataTable DataProvider support
 
 ## GetStarted
 
