@@ -9,7 +9,7 @@ Welcome to **Awesome Data Grid** - simple and faster `DataGridView` without depe
 - ✅ Just Control-based class with GDI+ rendering, no magic
 - ✅ Small sized control without overhead
 - ✅ Custom typed and format columns
-- ✅ Inline editors (for string, DateTime, Enum, Int32, Float32) via small cached controls + checkboxes for Boolean
+- ✅ Inline editors (for string, DateTime, Enum, Int32, Float32, Decimal etc) via small cached controls + checkboxes for Boolean
 - ✅ Image column support
 - ✅ Virtualized by default
 - ✅ Key inputs (arrows, ESC, Space, Enter, Del, PgDown, PgUp, Ctrl+C/Ctrl+V)
